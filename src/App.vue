@@ -10,7 +10,7 @@ import { RouterView } from 'vue-router'
 @media (min-width: 1024px) {
   #app {
     display: flex;
-    justify-content: center; /* 水平居中 */
+    justify-content: center;
     align-items: center;
     height: 770px;
   }
