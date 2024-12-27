@@ -1,7 +1,7 @@
 <template>
   <div class="home-container">
     <!-- avatar -->
-    <n-space align="flex-end" class="avatar-container">
+    <n-space align="end" class="avatar-container">
       <n-badge value="999+" class="my-avatar">
         <n-avatar
           round
@@ -11,7 +11,15 @@
       </n-badge>
     </n-space>
     <!-- menu -->
-    <n-menu :options="menuOptions" :icon-size="30" />
+    <n-menu :options="menuOptions" :icon-size="30" :default-value="'chat'" />
+    <!-- exit -->
+    <n-space class="exit-container">
+      <n-button text class="quick-exit">
+        <n-icon>
+          <PowerIcon />
+        </n-icon>
+      </n-button>
+    </n-space>
   </div>
 </template>
 
@@ -34,14 +42,13 @@ const menuOptions: MenuOption[] = [
   {
     key: 'group',
     icon: renderIcon(GroupIcon)
-  },
-  {
-    key: 'power',
-    icon: renderIcon(PowerIcon)
   }
 ]
 
 export default defineComponent({
+  components: {
+    PowerIcon
+  },
   setup() {
     return {
       menuOptions
@@ -64,7 +71,7 @@ export default defineComponent({
 }
 
 .n-menu {
-  height: 100%;
+  height: 80%;
   width: 10%;
   background-color: whitesmoke;
 }
@@ -73,6 +80,14 @@ export default defineComponent({
   --n-item-color-active: none;
   --n-item-color-hover: none;
   --n-item-color-active-hover: none;
+}
+
+.n-menu-item-content {
+  --n-item-color-hover: none;
+}
+
+.n-menu .n-menu-item-content .n-menu-item-content__icon:hover {
+  color: #36ad6a !important;
 }
 
 .n-menu .n-menu-item {
@@ -89,5 +104,17 @@ export default defineComponent({
   position: relative;
   left: 30px;
   bottom: 8px;
+}
+
+.exit-container {
+  height: 10%;
+  width: 10%;
+  background-color: whitesmoke;
+}
+
+.quick-exit {
+  position: relative;
+  left: 30px;
+  font-size: 30px
 }
 </style>
