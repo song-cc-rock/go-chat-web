@@ -25,21 +25,21 @@ const chatUserList: ChatUser[] = [
     id: '321419841',
     name: 'BobDylan',
     avatar: 'https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2F594048bb-3a81-4d16-95c0-d0d2f7e78af9%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1737874445&t=93b89b7698d017646d56dd8748736e3f',
-    lastChatContent: '哪吒乐队: 他在时间门外',
+    lastChatContent: '哪吒乐队: 他在时间门外。',
     lastChatTime: '11:38'
   },
   {
     id: '321419842',
     name: '寸铁演腰',
     avatar: 'https://img1.baidu.com/it/u=507077318,2244959797&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=667',
-    lastChatContent: '赞诗: 我看到了繁华精彩',
+    lastChatContent: '寸铁: 翻过小杰克遥远的新泽西。',
     lastChatTime: '10:31'
   },
   {
     id: '321419843',
     name: '痛仰',
     avatar: 'https://img1.baidu.com/it/u=3384405464,3680884287&fm=253&fmt=auto&app=138&f=PNG?w=502&h=500',
-    lastChatContent: '万青: 电灯熄灭, 物换星移, 泥牛入海.',
+    lastChatContent: '万青: 电灯熄灭, 物换星移, 泥牛入海。',
     lastChatTime: '09:11'
   }
 ]
@@ -70,9 +70,9 @@ function selectChatUser(user: ChatUser) {
 
 :deep(.n-thing-main__content) {
   margin-top: 0 !important;
-  white-space: nowrap;       /* 强制文本在一行内显示 */
-  overflow: hidden;          /* 隐藏超出容器的文本 */
-  text-overflow: ellipsis;   /* 当文本溢出时显示省略号 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   max-width: 90%;
 }
 

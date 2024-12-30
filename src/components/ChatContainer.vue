@@ -57,8 +57,8 @@
         </n-button>
       </div>
     </div>
-    <n-input type="textarea" />
-    <n-button type="primary" ghost >发送(S)</n-button>
+    <n-input type="textarea" class="chat-area" placeholder=""/>
+    <n-button type="primary" class="send-btn" ghost >发送(S)</n-button>
   </div>
 </template>
 
@@ -83,21 +83,21 @@ import {Microphone as CallPhoneIcon, Video as CallVideoIcon} from '@vicons/carbo
 .header {
   display: flex;
   height: 8.8%;
-  border-bottom: 2px whitesmoke solid;
+  border-bottom: 1px whitesmoke solid;
 }
 
 .footer {
   top: auto;
   bottom: 0;
   height: 31.2%;
-  border-top: 2px whitesmoke solid;
+  border-top: 1px whitesmoke solid;
 }
 
 .content {
   flex: 1;
   overflow-y: auto;
   height: 60%;
-  padding: 0 20px;
+  padding-left: 20px;
 }
 
 .to-user {
@@ -130,7 +130,8 @@ import {Microphone as CallPhoneIcon, Video as CallVideoIcon} from '@vicons/carbo
   display: flex;
   height: 17%;
   justify-content: space-between;
-  padding-left: 20px;
+  padding-left: 15px;
+  padding-top: 10px;
 }
 
 .left-btn {
@@ -146,5 +147,26 @@ import {Microphone as CallPhoneIcon, Video as CallVideoIcon} from '@vicons/carbo
 
 .right-btn button {
   margin-right: 20px;
+}
+
+.chat-area {
+  height: 56%;
+  text-align: start;
+  --n-border: none!important;
+  --n-border-hover: none!important;
+  --n-border-focus: none!important;
+  --n-box-shadow-focus: none!important;
+  padding-left: 5px;
+}
+
+.send-btn {
+  height: 15%;
+  float: inline-end;
+  right: 24px;
+  bottom: 9px;
+}
+
+:deep(.n-input.n-input--textarea.n-input--resizable .n-input-wrapper) {
+  resize: none;
 }
 </style>

@@ -32,4 +32,8 @@ import ChatContainer from '@/components/ChatContainer.vue'
 :deep(.search-input .n-input) {
   --n-color: whitesmoke!important;
 }
+
+:deep(.n-split__resize-trigger) {
+  width: 1px!important;
+}
 </style>
