@@ -11,7 +11,7 @@
       <chat-user-list />
     </template>
     <template #2>
-      这是右侧聊天框!!!
+      <chat-container />
     </template>
   </n-split>
 </template>
@@ -19,6 +19,7 @@
 <script setup lang="ts">
 import { SearchOutlined as SearchIcon} from '@vicons/antd'
 import ChatUserList from '@/components/chat/ChatUserList.vue'
+import ChatContainer from '@/components/ChatContainer.vue'
 </script>
 
 <style scoped>
