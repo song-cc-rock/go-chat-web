@@ -4,7 +4,7 @@ The chat web project.
 
 界面图：
 
-![主页](./public/assets/image.png)
+![主页](./public/assets/example.png)
 
 ## Recommended IDE Setup
 
