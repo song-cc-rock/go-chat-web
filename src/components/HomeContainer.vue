@@ -1,6 +1,6 @@
 <template>
   <div class="home-container">
-    <n-layout class="layout-container">
+    <n-layout class="layout-container" :has-sider="true">
       <n-layout-sider class="sider-container">
         <!-- avatar -->
         <div class="avatar-container">
