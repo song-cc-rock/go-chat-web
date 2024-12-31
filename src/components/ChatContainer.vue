@@ -63,10 +63,8 @@
 </template>
 
 <script setup lang="ts">
-import { MoreHorizontal16Regular as MoreIcon, CalendarChat20Regular as ChatHisIcon } from '@vicons/fluent'
-import {SmileOutlined as EmojiIcon} from '@vicons/antd'
-import {DriveFileMoveOutlined as FileIcon} from '@vicons/material'
-import {Microphone as CallPhoneIcon, Video as CallVideoIcon} from '@vicons/carbon'
+import { MoreHorizontal24Regular as MoreIcon, EmojiSparkle24Regular as EmojiIcon, DocumentAdd24Regular as FileIcon, History24Regular as ChatHisIcon,
+  SlideMicrophone24Regular as CallPhoneIcon, Video24Regular as CallVideoIcon } from '@vicons/fluent'
 </script>
 
 <style scoped>
