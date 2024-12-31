@@ -140,7 +140,7 @@ import ChatConversation from '@/components/chat/ChatConversation.vue'
   height: 15%;
   float: inline-end;
   right: 24px;
-  bottom: 9px;
+  bottom: 12px;
 }
 
 :deep(.n-input.n-input--textarea.n-input--resizable .n-input-wrapper) {

@@ -1,6 +1,6 @@
 <template>
   <n-list v-for="(value, key) in conversationMap" :key="key" class="group-chat" :show-divider="false">
-    <div class="last-time-tag"><n-tag size="small">{{getLastConversationTime(value[0])}}</n-tag></div>
+    <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(value[0]) }}</n-tag></div>
     <n-list-item v-for="msg in value[1]" :key="msg.id" :class="msg.sender === 'BobDylan' ? 'box-right' : 'box-left'">
       <template #prefix v-if="msg.sender !== 'BobDylan'">
         <n-avatar
@@ -32,9 +32,42 @@ import type { Msg } from '@/models/msg.ts'
 
 // key: 上一次对话时间分组, value: 对话内容集合
 const conversationMap: Map<Date, Msg[]> = new Map();
+conversationMap.set(new Date("2023-04-26 03:07:45"), [
+  {
+    id: '1701',
+    sender: 'Oasis',
+    receiver: 'BobDylan',
+    type: 'text',
+    content: "渔王还想继续做渔王!",
+    time: '2024-12-31 23:59:59',
+    avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
+  },
+]);
+conversationMap.set(new Date("2024-12-30 14:59:45"), [
+  {
+    id: '1701',
+    sender: 'Oasis',
+    receiver: 'BobDylan',
+    type: 'text',
+    content: "渔王还想继续做渔王!",
+    time: '2024-12-31 23:59:59',
+    avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
+  },
+]); 
+conversationMap.set(new Date("2024-12-31 10:32:45"), [
+  {
+    id: '1701',
+    sender: 'BobDylan',
+    receiver: 'Oasis',
+    type: 'text',
+    content: "Let it be!",
+    time: '2024-12-31 23:59:59',
+    avatar: 'https://img1.baidu.com/it/u=507077318,2244959797&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=667'
+  },
+]);  
 conversationMap.set(new Date(), [
   {
-    id: '28494141',
+    id: '1701',
     sender: 'Oasis',
     receiver: 'BobDylan',
     type: 'text',
@@ -43,7 +76,7 @@ conversationMap.set(new Date(), [
     avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
   },
   {
-    id: '28494142',
+    id: '1701',
     sender: 'BobDylan',
     receiver: 'Oasis',
     type: 'text',
@@ -52,7 +85,7 @@ conversationMap.set(new Date(), [
     avatar: 'https://img1.baidu.com/it/u=507077318,2244959797&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=667'
   },
   {
-    id: '28494141',
+    id: '1701',
     sender: 'Oasis',
     receiver: 'BobDylan',
     type: 'text',
@@ -61,7 +94,7 @@ conversationMap.set(new Date(), [
     avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
   },
   {
-    id: '28494141',
+    id: '1701',
     sender: 'Oasis',
     receiver: 'BobDylan',
     type: 'text',
@@ -70,7 +103,7 @@ conversationMap.set(new Date(), [
     avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
   },
   {
-    id: '28494141',
+    id: '1701',
     sender: 'Oasis',
     receiver: 'BobDylan',
     type: 'text',
@@ -79,7 +112,7 @@ conversationMap.set(new Date(), [
     avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
   },
   {
-    id: '28494142',
+    id: '1701',
     sender: 'BobDylan',
     receiver: 'Oasis',
     type: 'text',
@@ -90,9 +123,25 @@ conversationMap.set(new Date(), [
 ]);
 
 const getLastConversationTime = (date: Date) => {
-  const hour = date.getHours();
-  const minute = date.getMinutes();
-  return `${hour}:${minute}`;
+  const hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours();
+  const minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes();
+  let today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date.getTime() > today.getTime()) {
+    // 当天对话
+    return `${hour}:${minute}`;
+  } else {
+    today.setMonth(0, 0);
+    const month = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1;
+    const day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate();
+    if (date.getTime() > today.getTime()) {
+      // 当年对话
+      return `${month}-${day} ${hour}:${minute}`;
+    } else {
+      // 非当年对话
+      return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}`;
+    }
+  }  
 }
 </script>
 
@@ -107,13 +156,14 @@ const getLastConversationTime = (date: Date) => {
   display: inline-block;
   margin: 0 0 0.5em 0;
   padding: 7px 10px;
-  min-width: 120px;
+  min-width: 20px;
   max-width: 70%;
   color: black;
   font-size: 13px;
   font-weight: 400;
   background: whitesmoke;
   border-radius: 10px;
+  min-height: 20.8px;
 }
 
 .chat-box:before {
@@ -132,6 +182,7 @@ const getLastConversationTime = (date: Date) => {
   padding: 0 0 10px 0;
   width: 100%;
   align-items: flex-start;
+  min-height: 100%;
 }
 
 .box-left .chat-box{
@@ -184,4 +235,9 @@ const getLastConversationTime = (date: Date) => {
 :deep(.box-right .n-list-item__suffix) {
   margin-left: 15px!important;
 }
+
+.last-time-tag {
+  text-align: center;
+  margin-bottom: 10px;
+}  
 </style>
