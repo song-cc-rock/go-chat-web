@@ -10,29 +10,7 @@
   </div>
   <div class="content">
     <n-scrollbar style="max-height: 100%">
-      渔王还想 继续做渔王 <br/>
-      而海港已经 不知去向 <br/>
-      此刻他醉倒 在洗浴中心 <br/>
-      没有潮汐的梦 <br/>
-      胸口已暮色苍茫 <br/>
-      肥胖的城市 递给他一个 <br/>
-      传统的方法 来克制恐慌 <br/>
-      卖掉武器 风暴喉咙 <br/>
-      换取饮食 <br/>
-      背叛能让你获得自由 <br/>
-      停电之后 暂时摆脱了 <br/>
-      坚硬的时刻 倒转的河 <br/>
-      肥胖的城市 <br/>
-      驱赶着所有 拒绝沉没的人 <br/>
-      那首疯狂的歌又响起 <br/>
-      电灯熄灭 物换星移 泥牛入海 <br/>
-      黑暗好像 一颗巨石 按在胸口 <br/>
-      独脚大盗 百万富翁 摸爬滚打 <br/>
-      黑暗好像 一颗巨石 按在胸口 <br/>
-      电灯熄灭 物换星移 泥牛入海 <br/>
-      黑暗好像 一颗巨石 按在胸口 <br/>
-      独脚大盗 百万富翁 摸爬滚打 <br/>
-      黑暗好像 一颗巨石 按在胸口 <br/>
+      <chat-conversation />
     </n-scrollbar>
   </div>
   <div class="footer">
@@ -65,6 +43,7 @@
 <script setup lang="ts">
 import { MoreHorizontal24Regular as MoreIcon, EmojiSparkle24Regular as EmojiIcon, DocumentAdd24Regular as FileIcon, History24Regular as ChatHisIcon,
   SlideMicrophone24Regular as CallPhoneIcon, Video24Regular as CallVideoIcon } from '@vicons/fluent'
+import ChatConversation from '@/components/chat/ChatConversation.vue'
 </script>
 
 <style scoped>
@@ -95,7 +74,7 @@ import { MoreHorizontal24Regular as MoreIcon, EmojiSparkle24Regular as EmojiIcon
   flex: 1;
   overflow-y: auto;
   height: 60%;
-  padding-left: 20px;
+  padding: 0 0 0 20px;
 }
 
 .to-user {
