@@ -19,6 +19,7 @@
 
 <script setup lang="ts">
 import type { ChatUser } from '@/models/user'
+import { ref } from 'vue';
 
 const chatUserList: ChatUser[] = [
   {
