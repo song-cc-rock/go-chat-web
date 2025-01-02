@@ -34,7 +34,7 @@
       </div>
     </div>
   </div>
-  <div class="send-group-msg">
+  <div class="send-user-msg">
     <n-button strong secondary type="tertiary">
       发消息
     </n-button>
@@ -58,12 +58,13 @@ const props = defineProps<{
   display: block;
 }
 
-.send-group-msg {
+.send-user-msg {
   text-align: center;
   --n-text-color: black;
+  margin-top: 21px;
 }
 
-.send-group-msg .n-button {
+.send-user-msg .n-button {
   --n-text-color: black!important;
   --n-text-color-hover: black!important;
   --n-text-color-pressed: black!important;
