@@ -11,4 +11,6 @@ export interface ContactUser {
   name: string;
   avatar: string;
   email: string;
+  type: string;
+  phone: string;
 }

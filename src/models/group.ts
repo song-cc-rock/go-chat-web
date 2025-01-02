@@ -3,4 +3,5 @@ export interface Group {
   name: string;
   avatar: string;
   memberCount: number;
+  type: string;
 }

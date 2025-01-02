@@ -13,9 +13,11 @@
           </template>
         </n-button>
       </div>
-      <contact-user-list />
+      <contact-user-list @setCurrent="setCurrentContact"/>
     </template>
     <template #2>
+      <contact-group-detail :current-group="contactUser" v-if="contactUser && contactUser.type === 'group'" />
+      <contact-user-detail :current-user="contactUser" v-else-if="contactUser && contactUser.type === 'user'"/>
     </template>
   </n-split>
 </template>
@@ -23,7 +25,18 @@
 
 <script setup lang="ts">
 import ContactUserList from '@/components/contact/ContactUserList.vue'
+import type { Group } from '@/models/group';
+import type { ContactUser } from '@/models/user';
 import { SearchOutlined as SearchIcon, UsergroupAddOutlined as GroupAddIcon} from '@vicons/antd'
+import { ref } from 'vue';
+import ContactGroupDetail from '@/components/contact/ContactGroupDetail.vue'
+import ContactUserDetail from '@/components/contact/ContactUserDetail.vue'
+
+const contactUser = ref<ContactUser|Group>()
+
+const setCurrentContact = (user: ContactUser|Group) => {
+  contactUser.value = user
+}
 </script>
 
 <style scoped>

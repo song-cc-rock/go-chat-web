@@ -41,24 +41,34 @@ import type {ContactUser } from '@/models/user'
 import { ref } from 'vue';
 import type { Group } from '@/models/group.ts'
 
+const emit = defineEmits<{
+    (e: 'setCurrent', user: ContactUser|Group): void;
+  }>();
+
 const contactUserList: ContactUser[] = [
   {
     id: '321419841',
     name: 'BobDylan',
     avatar: 'https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2F594048bb-3a81-4d16-95c0-d0d2f7e78af9%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1737874445&t=93b89b7698d017646d56dd8748736e3f',
-    email: 'folk@v.im'
+    email: 'folk@v.im',
+    type: 'user',
+    phone: '1701-24-3213'
   },
   {
     id: '321419842',
     name: '寸铁演腰',
     avatar: 'https://img1.baidu.com/it/u=507077318,2244959797&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=667',
-    email: 'rock@v.im'
+    email: 'rock@v.im',
+    type: 'user',
+    phone: '4535-44-9533'
   },
   {
     id: '321419843',
     name: '痛仰',
     avatar: 'https://img1.baidu.com/it/u=3384405464,3680884287&fm=253&fmt=auto&app=138&f=PNG?w=502&h=500',
-    email: 'reggae@v.im'
+    email: 'reggae@v.im',
+    type: 'user',
+    phone: '7564-42-9231'
   }
 ]
 
@@ -67,13 +77,15 @@ const contactGroupList: Group[] = [
     id: '321419844',
     name: '迷笛之声',
     avatar: 'https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fci.xiaohongshu.com%2F81df5dc2-3b6f-62c7-0fc4-f6d59a4c6977%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fci.xiaohongshu.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1738389166&t=7085966a0aa5ad15b244af28fe18d8f4',
-    memberCount: 7
+    memberCount: 7,
+    type: 'group'
   },
   {
     id: '321419845',
     name: '摇滚新势力',
     avatar: 'https://img1.baidu.com/it/u=1412564125,2459020542&fm=253&fmt=auto&app=138&f=JPEG?w=270&h=380',
-    memberCount: 13
+    memberCount: 13,
+    type: 'group'
   }
 ]
 
@@ -81,6 +93,7 @@ const currentContact = ref<ContactUser|Group>()
 
 function selectChatUser(user: ContactUser|Group) {
   currentContact.value = user;
+  emit('setCurrent', user);
 }
 </script>
 
