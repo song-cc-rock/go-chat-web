@@ -4,7 +4,12 @@ The chat web project.
 
 界面图：
 
-![主页](./public/assets/example.jpg)
+1. 聊天页面
+   ![主页](./public/assets/chat.jpg)
+
+2. 群/好友信息页面
+   ![群信息](./public/assets/group.jpg)
+   ![好友信息](./public/assets/friend.jpg)
 
 ## Recommended IDE Setup
 
