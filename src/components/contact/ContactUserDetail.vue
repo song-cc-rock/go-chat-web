@@ -44,9 +44,10 @@
 <script setup lang="ts">
 import type { ContactUser } from '@/models/user.ts'
 import {IdcardOutlined as CardIcon} from '@vicons/antd'
+import type { Group } from '@/models/group.ts'
 
 const props = defineProps<{
-  currentUser: ContactUser;
+  currentUser: ContactUser|Group;
 }>();
 </script>
 

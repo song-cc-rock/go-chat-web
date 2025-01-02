@@ -12,7 +12,7 @@
           :src="contactGroup.avatar"
         />
       </template>
-      <n-thing :title="contactGroup.name + '(' + contactGroup.memberCount + ')'"></n-thing>
+      <n-thing :title="contactGroup.name + ' (' + contactGroup.memberCount + ')'"></n-thing>
     </n-list-item>
   </n-list>
   <n-divider />
