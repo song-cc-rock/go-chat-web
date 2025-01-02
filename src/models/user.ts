@@ -5,3 +5,10 @@ export interface ChatUser {
   lastChatTime: string;
   lastChatContent: string;
 }
+
+export interface ContactUser {
+  id: string;
+  name: string;
+  avatar: string;
+  email: string;
+}
