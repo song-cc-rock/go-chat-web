@@ -41,11 +41,6 @@
                     <n-icon size="35" :component="WeiboIcon" />
                   </template>
                 </n-button>
-                <n-button text color="black">
-                  <template #icon>
-                    <n-icon size="35" :component="AppleIcon" />
-                  </template>
-                </n-button>
                 <n-button text color="#00bb29">
                   <template #icon>
                     <n-icon size="35" :component="WechatIcon" />
