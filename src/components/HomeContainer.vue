@@ -16,7 +16,7 @@
         <n-menu :options="menuOptions" :icon-size="30" :default-value="'chat'" @update:value="toMenu" />
         <!-- exit -->
         <div class="quick-container">
-          <n-button text class="quick-exit">
+          <n-button text class="quick-exit" @click="showExitModal = true">
             <n-icon>
               <PowerIcon />
             </n-icon>
@@ -30,19 +30,32 @@
       </n-layout>
     </n-layout>
   </div>
+
+  <n-modal
+    v-model:show="showExitModal"
+    :mask-closable="false"
+    preset="dialog"
+    title="退出系统?"
+    positive-text="确认"
+    negative-text="蒜鸟🤣!"
+    @positive-click="exitHome"
+    @negative-click="keepChat"
+  />
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import type { MenuOption } from 'naive-ui'
 import type { Component } from 'vue'
 import { WechatOutlined as ChatIcon, UsergroupAddOutlined as GroupIcon, PoweroffOutlined as PowerIcon} from '@vicons/antd'
-import { NIcon } from 'naive-ui'
-import { defineComponent, h } from 'vue'
+import { NIcon, createDiscreteApi } from 'naive-ui'
+import { h, ref } from 'vue'
 import router from "@/router/index.js";
 
-function renderIcon(icon: Component) {
+const { message } = createDiscreteApi(["message"])
+const renderIcon = (icon: Component) => {
   return () => h(NIcon, null, { default: () => h(icon) })
 }
+const showExitModal = ref<boolean>(false)
 
 const menuOptions: MenuOption[] = [
   {
@@ -55,19 +68,20 @@ const menuOptions: MenuOption[] = [
   }
 ]
 
-export default defineComponent({
-  components: {
-    PowerIcon
-  },
-  setup() {
-    return {
-      menuOptions,
-      toMenu(key: string) {
-        router.push(key)
-      }
-    }
-  }
-})
+const toMenu = (key: string) => {
+  router.push(key)
+}
+
+const exitHome = () => {
+  showExitModal.value = false
+  router.push('/login')
+  message.success('已登出！')
+}
+
+const keepChat = () => {
+  showExitModal.value = false
+  message.info('Go Chat😊!')
+}
 </script>
 
 <style>

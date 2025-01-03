@@ -5,16 +5,16 @@
       <n-card class="login-card" title="Just Chat ✨">
         <n-tabs default-value="signin" size="large" justify-content="space-evenly">
           <n-tab-pane name="signin" tab="登录">
-            <n-form :show-label="false" class="login-form">
-              <n-form-item>
-                <n-input placeholder="手机号或邮箱">
+            <n-form :show-label="false" class="login-form" ref="formRef" :model="loginForm" :rules="rules">
+              <n-form-item path="account">
+                <n-input placeholder="手机号或邮箱" v-model:value="loginForm.account">
                   <template #prefix>
                     <n-icon size="20" :component="UsernameIcon" />
                   </template>
                 </n-input>
               </n-form-item>
-              <n-form-item>
-                <n-input type="password" placeholder="密码" show-password-on="click">
+              <n-form-item path="password">
+                <n-input type="password" placeholder="密码" show-password-on="click" v-model:value="loginForm.password">
                   <template #prefix>
                     <n-icon size="20" :component="PasswordIcon" />
                   </template>
@@ -27,7 +27,7 @@
                 </n-button>
               </n-form-item>
             </n-form>
-            <n-button type="primary" block secondary strong>
+            <n-button type="primary" block secondary strong @click="toLogin">
               登录
             </n-button>
 
@@ -103,12 +103,20 @@
 
 <script setup lang="ts">
 import {UserOutlined as UsernameIcon, LockOutlined as PasswordIcon, WeiboOutlined as WeiboIcon, ZhihuOutlined as ZhihuIcon,
-  QqOutlined as QQIcon, AppleFilled as AppleIcon, WechatOutlined as WechatIcon} from '@vicons/antd'
+  QqOutlined as QQIcon, WechatOutlined as WechatIcon} from '@vicons/antd'
 import {NumberSymbolSquare24Regular as CodeIcon} from '@vicons/fluent'
-import { createDiscreteApi } from "naive-ui"
+import { createDiscreteApi, type FormInst } from 'naive-ui'
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router';
+import { RouteEnum } from '@/enums/routeEnums.ts'
 
-
+const router = useRouter()
+const formRef = ref<FormInst | null>(null)
+const loginForm = ref({ account: '', password: '' })
+const rules = {
+  account: [{ required: true, message: '请输入手机号或邮箱' }],
+  password: [{ required: true, message: '请输入密码' }]
+}
 const totalTime = 60
 const { message } = createDiscreteApi(["message"])
 const codeFinish = ref<boolean>(false)
@@ -116,6 +124,7 @@ const codeFinish = ref<boolean>(false)
 const remainingTime = reactive ({
   seconds: totalTime
 })
+// countdown timer
 let timer : number | undefined;
 
 const getMyCode = () => {
@@ -132,6 +141,23 @@ const getMyCode = () => {
       clearInterval(timer);
     }
   }, 1000);
+}
+
+const toLogin = (e: MouseEvent) => {
+  e.preventDefault();
+  formRef.value?.validate((errors) => {
+    if (!errors) {
+      // TODO: login logic
+      if (loginForm.value.account === 'go-chat@cc.com' && loginForm.value.password === '1') {
+        router.push({ name: RouteEnum.HOME });
+        message.success('登录成功!')
+      } else {
+        message.error('账号或密码错误!')
+      }
+    } else {
+      message.warning('参数校验失败!')
+    }
+  })
 }
 </script>
 
