@@ -1,29 +1,35 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeComponent from "@/views/HomeComponent.vue";
-import ChatComponent from '@/views/ChatComponent.vue'
-import ContactComponent from '@/views/ContactComponent.vue'
+import Home from "@/views/Home.vue";
+import Chat from '@/views/Chat.vue'
+import Contact from '@/views/Contact.vue'
+import Login from '@/views/Login.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      redirect: 'home',
+      redirect: 'login',
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: Login
     },
     {
       path: '/home',
       name: 'home',
-      component: HomeComponent,
+      component: Home,
       children: [
         {
           path: '/chat',
           name: 'chat',
-          component: ChatComponent
+          component: Chat
         },
         {
           path: '/contact',
           name: 'contact',
-          component: ContactComponent
+          component: Contact
         }
       ]
     }

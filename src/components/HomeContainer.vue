@@ -81,6 +81,8 @@ export default defineComponent({
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
   background: transparent;
+  position: absolute;
+  top: 7%;
 }
 
 .layout-container {

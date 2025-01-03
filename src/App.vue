@@ -12,7 +12,6 @@ import { RouterView } from 'vue-router'
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 770px;
   }
 }
 </style>
