@@ -1,11 +1,13 @@
 ## Go chat web project.
 
 #### Page：
+1. ###### Login page
+   ![login](./public/assets/login.jpg)
 
-1. ###### Chat page
+2. ###### Chat page
    ![chat](./public/assets/chat.jpg)
 
-2. ###### Group/Friend page
+3. ###### Group/Friend page
    ![group](./public/assets/group.jpg)
    ![friend](./public/assets/friend.jpg)
 
