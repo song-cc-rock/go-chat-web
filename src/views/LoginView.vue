@@ -22,7 +22,7 @@
               </n-form-item>
               <n-form-item>
                 <n-checkbox>自动登录</n-checkbox>
-                <n-button text tag="a" target="_blank" type="primary">
+                <n-button text tag="a" target="_blank" type="primary" @click="toTest">
                   忘记密码
                 </n-button>
               </n-form-item>
@@ -111,6 +111,7 @@ import { useRouter } from 'vue-router';
 import { RouteEnum } from '@/enums/routeEnums.ts'
 import { sendVerifyCode, register } from '@/api/register.ts'
 import { login } from '@/api/login.ts'
+import { testToken } from '@/api/token.ts'
 
 const router = useRouter()
 const formRef = ref<FormInst | null>(null)
@@ -189,6 +190,10 @@ const toLogin = (e: MouseEvent) => {
       }
     }
   })
+}
+
+const toTest = () => {
+  testToken()
 }
 </script>
 

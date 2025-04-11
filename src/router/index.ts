@@ -20,6 +20,7 @@ const router = createRouter({
       path: '/home',
       name: 'home',
       component: Home,
+      redirect: '/chat',
       children: [
         {
           path: '/chat',
