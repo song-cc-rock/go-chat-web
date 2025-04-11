@@ -60,16 +60,16 @@
             </div>
           </n-tab-pane>
           <n-tab-pane name="signup" tab="注册">
-            <n-form :show-label="false" class="register-form">
-              <n-form-item>
-                <n-input placeholder="手机号或邮箱">
+            <n-form :show-label="false" class="register-form" :model="registerForm" ref="registerRef" :rules="registerRules">
+              <n-form-item path="account">
+                <n-input placeholder="手机号或邮箱" v-model:value="registerForm.account">
                   <template #prefix>
                     <n-icon size="20" :component="UsernameIcon" />
                   </template>
                 </n-input>
               </n-form-item>
-              <n-form-item>
-                <n-input placeholder="验证码">
+              <n-form-item path="code">
+                <n-input placeholder="验证码" v-model:value="registerForm.code">
                   <template #prefix>
                     <n-icon size="20" :component="CodeIcon" />
                   </template>
@@ -83,15 +83,15 @@
                   </template>
                 </n-input>
               </n-form-item>
-              <n-form-item>
-                <n-input type="password" placeholder="初始密码" show-password-on="click">
+              <n-form-item path="password">
+                <n-input type="password" placeholder="初始密码" show-password-on="click" v-model:value="registerForm.password">
                   <template #prefix>
                     <n-icon size="20" :component="PasswordIcon" />
                   </template>
                 </n-input>
               </n-form-item>
             </n-form>
-            <n-button type="primary" block secondary strong>
+            <n-button type="primary" block secondary strong @click="toRegister">
               注册
             </n-button>
           </n-tab-pane>
@@ -109,12 +109,20 @@ import { createDiscreteApi, type FormInst } from 'naive-ui'
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router';
 import { RouteEnum } from '@/enums/routeEnums.ts'
+import { sendVerifyCode, register } from '@/api/register.ts'
 
 const router = useRouter()
 const formRef = ref<FormInst | null>(null)
+const registerRef = ref<FormInst | null>(null)
 const loginForm = ref({ account: '', password: '' })
+const registerForm = ref({account: '', code: '', password: ''})
 const rules = {
   account: [{ required: true, message: '请输入手机号或邮箱' }],
+  password: [{ required: true, message: '请输入密码' }]
+}
+const registerRules = {
+  account: [{ required: true, message: '请输入手机号或邮箱' }],
+  code: [{ required: true, message: '请输入验证码' }],
   password: [{ required: true, message: '请输入密码' }]
 }
 const totalTime = 60
@@ -127,11 +135,16 @@ const remainingTime = reactive ({
 // countdown timer
 let timer : number | undefined;
 
-const getMyCode = () => {
+const getMyCode = async () => {
   if (!codeFinish.value) {
+    if (!registerForm.value.account) {
+      message.error('请填写手机或邮箱!');
+      return
+    }
+    await sendVerifyCode(registerForm.value.account);
+    message.success('验证码已发送，请注意查收!');
     codeFinish.value = true;
     remainingTime.seconds = totalTime;
-    message.success('验证码已发送，请注意查收!');
   }
   timer = setInterval(() => {
     if (remainingTime.seconds > 1) {
@@ -141,6 +154,20 @@ const getMyCode = () => {
       clearInterval(timer);
     }
   }, 1000);
+}
+
+const toRegister = () => {
+  registerRef.value?.validate(async (errors) => {
+    if (!errors) {
+      const user = {
+        mail: registerForm.value.account,
+        code: registerForm.value.code,
+        password: registerForm.value.password
+      }
+      await register(user)
+      message.success('注册成功, 请登录!');
+    }
+  })
 }
 
 const toLogin = (e: MouseEvent) => {
@@ -154,8 +181,6 @@ const toLogin = (e: MouseEvent) => {
       } else {
         message.error('账号或密码错误!')
       }
-    } else {
-      message.warning('参数校验失败!')
     }
   })
 }

@@ -24,7 +24,7 @@ import type { ChatUser } from '@/models/user.ts'
 import type { Group } from '@/models/group.ts'
 
 const props = defineProps<{
-  currentGroup: ContactUser | Group;
+  currentGroup: ChatUser | Group;
 }>();
 
 const groupMemberList: ChatUser[] = [
