@@ -110,6 +110,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router';
 import { RouteEnum } from '@/enums/routeEnums.ts'
 import { sendVerifyCode, register } from '@/api/register.ts'
+import { login } from '@/api/login.ts'
 
 const router = useRouter()
 const formRef = ref<FormInst | null>(null)
@@ -172,11 +173,16 @@ const toRegister = () => {
 
 const toLogin = (e: MouseEvent) => {
   e.preventDefault();
-  formRef.value?.validate((errors) => {
+  formRef.value?.validate(async (errors) => {
     if (!errors) {
-      // TODO: login logic
-      if (loginForm.value.account === 'go-chat@cc.com' && loginForm.value.password === '1') {
-        router.push({ name: RouteEnum.HOME });
+      const loginUser = {
+        mail: loginForm.value.account,
+        password: loginForm.value.password
+      }
+      const data = await login(loginUser)
+      if (data) {
+        localStorage.setItem("token", data['accessToken'])
+        await router.push({ name: RouteEnum.HOME });
         message.success('登录成功!')
       } else {
         message.error('账号或密码错误!')

@@ -3,3 +3,8 @@ export interface RegisterUser {
   code: string,
   password: string
 }
+
+export interface LoginUser {
+  mail: string,
+  password: string
+}
