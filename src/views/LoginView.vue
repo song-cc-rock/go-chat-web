@@ -179,9 +179,9 @@ const toLogin = (e: MouseEvent) => {
         mail: loginForm.value.account,
         password: loginForm.value.password
       }
-      const data = await login(loginUser)
-      if (data) {
-        localStorage.setItem("token", data['accessToken'])
+      const token = await login(loginUser)
+      if (token) {
+        localStorage.setItem("token", token)
         await router.push({ name: RouteEnum.HOME });
         message.success('登录成功!')
       } else {
