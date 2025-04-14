@@ -40,7 +40,7 @@ export default defineConfig({
     port: 8888,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8080', // 后端服务地址
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
