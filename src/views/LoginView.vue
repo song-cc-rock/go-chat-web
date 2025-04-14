@@ -36,9 +36,9 @@
                 更多登录方式
               </n-divider>
               <n-flex class="more-login-btn" justify="space-around">
-                <n-button text color="#e05244">
+                <n-button text color="rgb(51, 54, 57)" @click="redirectAuthUrl('github')">
                   <template #icon>
-                    <n-icon size="35" :component="WeiboIcon" />
+                    <n-icon size="35" :component="GithubIcon" />
                   </template>
                 </n-button>
                 <n-button text color="#00bb29">
@@ -102,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import {UserOutlined as UsernameIcon, LockOutlined as PasswordIcon, WeiboOutlined as WeiboIcon, ZhihuOutlined as ZhihuIcon,
+import {UserOutlined as UsernameIcon, LockOutlined as PasswordIcon, GithubOutlined as GithubIcon, ZhihuOutlined as ZhihuIcon,
   QqOutlined as QQIcon, WechatOutlined as WechatIcon} from '@vicons/antd'
 import {NumberSymbolSquare24Regular as CodeIcon} from '@vicons/fluent'
 import { createDiscreteApi, type FormInst } from 'naive-ui'
@@ -112,6 +112,7 @@ import { RouteEnum } from '@/enums/routeEnums.ts'
 import { sendVerifyCode, register } from '@/api/register.ts'
 import { login } from '@/api/login.ts'
 import { testToken } from '@/api/token.ts'
+import { getAuthUrl } from '@/api/auth.ts'
 
 const router = useRouter()
 const formRef = ref<FormInst | null>(null)
@@ -190,6 +191,14 @@ const toLogin = (e: MouseEvent) => {
       }
     }
   })
+}
+
+const redirectAuthUrl = async (authType: string) => {
+  const redirectParam = await getAuthUrl(authType)
+  switch (authType) {
+    case 'github':
+      window.location.href = 'https://github.com/login/oauth/authorize?' + redirectParam
+  }
 }
 
 const toTest = () => {
