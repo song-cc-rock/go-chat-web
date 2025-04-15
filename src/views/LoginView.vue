@@ -193,12 +193,9 @@ const toLogin = (e: MouseEvent) => {
   })
 }
 
-const redirectAuthUrl = async (authType: string) => {
-  const redirectParam = await getAuthUrl(authType)
-  switch (authType) {
-    case 'github':
-      window.location.href = 'https://github.com/login/oauth/authorize?' + redirectParam
-  }
+const redirectAuthUrl = async () => {
+  const redirectParam = await getAuthUrl()
+  window.location.href = 'https://github.com/login/oauth/authorize?' + redirectParam
 }
 
 const toTest = () => {
