@@ -3,6 +3,7 @@ import Home from "@/views/HomeView.vue";
 import Chat from '@/views/ChatView.vue'
 import Contact from '@/views/ContactView.vue'
 import Login from '@/views/LoginView.vue'
+import AuthSuccess from '@/views/AuthSuccess.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,6 +16,12 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: Login
+    },
+    {
+      path: '/auth-success',
+      name: 'authSuccess',
+      component: AuthSuccess,
+      meta: { hidden: true }
     },
     {
       path: '/home',

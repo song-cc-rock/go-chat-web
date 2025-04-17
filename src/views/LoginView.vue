@@ -41,7 +41,7 @@
                     <n-icon size="35" :component="GithubIcon" />
                   </template>
                 </n-button>
-                <n-button text color="#00bb29">
+                <n-button text color="#00bb29" @click="redirectAuthUrl('wechat')">
                   <template #icon>
                     <n-icon size="35" :component="WechatIcon" />
                   </template>
@@ -113,6 +113,7 @@ import { sendVerifyCode, register } from '@/api/register.ts'
 import { login } from '@/api/login.ts'
 import { testToken } from '@/api/token.ts'
 import { getAuthUrl } from '@/api/auth.ts'
+import { getBaseAuthByType } from '@/constants/auth.ts'
 
 const router = useRouter()
 const formRef = ref<FormInst | null>(null)
@@ -193,9 +194,9 @@ const toLogin = (e: MouseEvent) => {
   })
 }
 
-const redirectAuthUrl = async () => {
-  const redirectParam = await getAuthUrl()
-  window.location.href = 'https://github.com/login/oauth/authorize?' + redirectParam
+const redirectAuthUrl = async (authType: string) => {
+  const redirectParam = await getAuthUrl(authType)
+  window.location.href = getBaseAuthByType(authType) + redirectParam
 }
 
 const toTest = () => {
