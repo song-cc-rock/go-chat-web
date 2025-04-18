@@ -4,13 +4,18 @@
       <n-layout-sider class="sider-container">
         <!-- avatar -->
         <div class="avatar-container">
-          <n-badge value="999+" class="my-avatar">
-            <n-avatar
-              round
-              size="medium"
-              :src="authUser?.avatar"
-            />
-          </n-badge>
+          <n-popover :show-arrow="false" trigger="click" placement="right">
+            <template #trigger>
+              <n-badge :value="unReadCount" :max="99" class="my-avatar">
+                <n-avatar
+                  round
+                  size="medium"
+                  :src="authUser.avatar"
+                />
+              </n-badge>
+            </template>
+            <user-tip-container :current-user="authUser" style="background-color: white!important;"/>
+          </n-popover>
         </div>
         <!-- menu -->
         <n-menu :options="menuOptions" :icon-size="30" :default-value="'chat'" @update:value="toMenu" />
@@ -45,12 +50,14 @@
 
 <script setup lang="ts">
 import type { MenuOption } from 'naive-ui'
-import type { Component } from 'vue'
+import { type Component, onMounted } from 'vue'
 import { WechatOutlined as ChatIcon, UsergroupAddOutlined as GroupIcon, PoweroffOutlined as PowerIcon} from '@vicons/antd'
 import { NIcon, createDiscreteApi } from 'naive-ui'
 import { h, ref } from 'vue'
 import router from "@/router/index.js";
 import { clearAuthUser, getAuthUser } from '@/utils/auth.ts'
+import { getUnreadCount } from '@/api/user.ts'
+import UserTipContainer from '@/components/UserTipContainer.vue'
 
 const { message } = createDiscreteApi(["message"])
 const renderIcon = (icon: Component) => {
@@ -58,6 +65,7 @@ const renderIcon = (icon: Component) => {
 }
 const showExitModal = ref<boolean>(false)
 const authUser = getAuthUser()
+const unReadCount = ref<number>(0)
 
 const menuOptions: MenuOption[] = [
   {
@@ -85,6 +93,12 @@ const keepChat = () => {
   showExitModal.value = false
   message.info('Go Chat😊!')
 }
+
+onMounted(async () => {
+  if (authUser) {
+    unReadCount.value = await getUnreadCount(authUser.id)
+  }
+})
 </script>
 
 <style>
@@ -155,6 +169,7 @@ const keepChat = () => {
   position: relative;
   left: 30px;
   top: 20px;
+  cursor: pointer;
 }
 
 .quick-container {

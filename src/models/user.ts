@@ -17,8 +17,8 @@ export interface ContactUser {
 
 export interface AuthUser {
   id: string;
-  name: string;
+  nickName: string;
   avatar: string;
-  email: string;
+  mail: string;
   phone: string;
 }
