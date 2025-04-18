@@ -13,7 +13,7 @@
           </template>
         </n-button>
       </div>
-      <chat-user-list />
+      <chat-user-list :chat-user-list="conversations" />
     </template>
     <template #2>
       <chat-container />
@@ -25,6 +25,17 @@
 import { SearchOutlined as SearchIcon, PlusOutlined as PlusIcon} from '@vicons/antd'
 import ChatUserList from '@/components/chat/ChatUserList.vue'
 import ChatContainer from '@/components/ChatContainer.vue'
+import { onMounted, ref } from 'vue'
+import { getConversationList } from '@/api/conversation.ts'
+import { getAuthUser } from '@/utils/auth.ts'
+import type { ConversationResponse } from '@/models/conversation.ts'
+
+const authUser = getAuthUser()
+const conversations = ref<ConversationResponse[]>()
+
+onMounted(async () => {
+  conversations.value = await getConversationList(authUser.id)
+})
 </script>
 
 <style scoped>

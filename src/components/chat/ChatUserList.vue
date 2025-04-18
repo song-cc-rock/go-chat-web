@@ -1,6 +1,6 @@
 <template>
   <n-list :hoverable="true" :clickable="true" :bordered="false">
-    <n-list-item v-for="chatUser in chatUserList" :key="chatUser.id" @click="selectChatUser(chatUser)"
+    <n-list-item v-for="chatUser in props.chatUserList" :key="chatUser.id" @click="selectChatUser(chatUser)"
                  :class="currentChatUser != null && chatUser.id === currentChatUser.id ? 'current-chat-focus': ''">
       <template #prefix>
         <n-avatar
@@ -10,45 +10,41 @@
           :src="chatUser.avatar"
         />
       </template>
-      <n-thing :title="chatUser.name" :title-extra="chatUser.lastChatTime">
-        <span class="last-content">{{chatUser.lastChatContent}}</span>
+      <n-thing :title="chatUser.nickName" :title-extra="formatLastTime(chatUser.lastMessageAt)">
+        <span class="last-content">{{sentByTarget(chatUser) ? chatUser.nickName + ": " + chatUser.lastMessage : chatUser.lastMessage}}</span>
       </n-thing>
+      <n-badge :value="chatUser.unreadCount" :max="99" class="un-read-badge" />
     </n-list-item>
   </n-list>
 </template>
 
 <script setup lang="ts">
-import type { ChatUser } from '@/models/user'
 import { ref } from 'vue';
+import type { ConversationResponse } from '@/models/conversation.ts'
+import { formatTimestamp } from '@/utils/date.ts'
+const props = defineProps<{
+  chatUserList: ConversationResponse[] | undefined;
+}>();
 
-const chatUserList: ChatUser[] = [
-  {
-    id: '321419841',
-    name: 'BobDylan',
-    avatar: 'https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2F594048bb-3a81-4d16-95c0-d0d2f7e78af9%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1737874445&t=93b89b7698d017646d56dd8748736e3f',
-    lastChatContent: '哪吒乐队: 他在时间门外。',
-    lastChatTime: '11:38'
-  },
-  {
-    id: '321419842',
-    name: '寸铁演腰',
-    avatar: 'https://img1.baidu.com/it/u=507077318,2244959797&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=667',
-    lastChatContent: '寸铁: 翻过小杰克遥远的新泽西。',
-    lastChatTime: '10:31'
-  },
-  {
-    id: '321419843',
-    name: '痛仰',
-    avatar: 'https://img1.baidu.com/it/u=3384405464,3680884287&fm=253&fmt=auto&app=138&f=PNG?w=502&h=500',
-    lastChatContent: '万青: 电灯熄灭, 物换星移, 泥牛入海。',
-    lastChatTime: '09:11'
-  }
-]
+const currentChatUser = ref<ConversationResponse>()
 
-const currentChatUser = ref<ChatUser>()
-
-function selectChatUser(user: ChatUser) {
+const selectChatUser = (user: ConversationResponse) => {
   currentChatUser.value = user;
+}
+
+const formatLastTime = (timestamp: number) => {
+  const now = new Date()
+  const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const current = Math.floor(todayZero.getTime() / 1000)
+  if (timestamp < current) {
+    return  formatTimestamp(timestamp, "YYYY-MM-DD")
+  } else {
+    return formatTimestamp(timestamp, "HH:mm")
+  }
+}
+
+const sentByTarget = (user: ConversationResponse) => {
+  return user.lastSentUser === user.targetUserID
 }
 </script>
 
@@ -103,5 +99,16 @@ function selectChatUser(user: ChatUser) {
 
 .current-chat-focus {
   background-color: rgb(238, 238, 238);
+}
+
+.un-read-badge {
+  float: right;
+  position: relative;
+  top: -20px;
+  height: 0;
+}
+
+:deep(.un-read-badge sup.n-badge-sup) {
+  font-size: 11px!important;
 }
 </style>
