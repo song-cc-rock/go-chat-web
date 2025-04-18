@@ -4,8 +4,13 @@ export const AUTH_BASE = {
   wechat: 'https://open.weixin.qq.com/connect/qrconnect?',
 } as const;
 
-export type AuthType = keyof typeof AUTH_BASE;
-
-export function getBaseAuthByType(type: AuthType): string {
-  return AUTH_BASE[type];
+export function getBaseAuthByType(type: string): string {
+  switch (type) {
+    case 'github':
+      return AUTH_BASE.github;
+    case 'wechat':
+      return AUTH_BASE.wechat;
+    default:
+      return AUTH_BASE.github;
+  }
 }

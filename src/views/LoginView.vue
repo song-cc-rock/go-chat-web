@@ -22,7 +22,7 @@
               </n-form-item>
               <n-form-item>
                 <n-checkbox>自动登录</n-checkbox>
-                <n-button text tag="a" target="_blank" type="primary" @click="toTest">
+                <n-button text tag="a" target="_blank" type="primary">
                   忘记密码
                 </n-button>
               </n-form-item>
@@ -111,7 +111,6 @@ import { useRouter } from 'vue-router';
 import { RouteEnum } from '@/enums/routeEnums.ts'
 import { sendVerifyCode, register } from '@/api/register.ts'
 import { login } from '@/api/login.ts'
-import { testToken } from '@/api/token.ts'
 import { getAuthUrl } from '@/api/auth.ts'
 import { getBaseAuthByType } from '@/constants/auth.ts'
 
@@ -197,10 +196,6 @@ const toLogin = (e: MouseEvent) => {
 const redirectAuthUrl = async (authType: string) => {
   const redirectParam = await getAuthUrl(authType)
   window.location.href = getBaseAuthByType(authType) + redirectParam
-}
-
-const toTest = () => {
-  testToken()
 }
 </script>
 

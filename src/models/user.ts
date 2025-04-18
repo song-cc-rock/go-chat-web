@@ -14,3 +14,11 @@ export interface ContactUser {
   type: string;
   phone: string;
 }
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  avatar: string;
+  email: string;
+  phone: string;
+}

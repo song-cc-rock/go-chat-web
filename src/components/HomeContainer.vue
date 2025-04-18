@@ -8,7 +8,7 @@
             <n-avatar
               round
               size="medium"
-              src="https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2F594048bb-3a81-4d16-95c0-d0d2f7e78af9%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1737874445&t=93b89b7698d017646d56dd8748736e3f"
+              :src="authUser?.avatar"
             />
           </n-badge>
         </div>
@@ -50,12 +50,14 @@ import { WechatOutlined as ChatIcon, UsergroupAddOutlined as GroupIcon, Poweroff
 import { NIcon, createDiscreteApi } from 'naive-ui'
 import { h, ref } from 'vue'
 import router from "@/router/index.js";
+import { clearAuthUser, getAuthUser } from '@/utils/auth.ts'
 
 const { message } = createDiscreteApi(["message"])
 const renderIcon = (icon: Component) => {
   return () => h(NIcon, null, { default: () => h(icon) })
 }
 const showExitModal = ref<boolean>(false)
+const authUser = getAuthUser()
 
 const menuOptions: MenuOption[] = [
   {
@@ -74,6 +76,7 @@ const toMenu = (key: string) => {
 
 const exitHome = () => {
   showExitModal.value = false
+  clearAuthUser()
   router.push('/login')
   message.success('已登出！')
 }
