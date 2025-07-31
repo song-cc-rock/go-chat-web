@@ -113,6 +113,8 @@ import { sendVerifyCode, register } from '@/api/register.ts'
 import { login } from '@/api/login.ts'
 import { getAuthUrl } from '@/api/auth.ts'
 import { getBaseAuthByType } from '@/constants/auth.ts'
+import { getUserProfile } from '@/api/user.ts'
+import { setAuthUser } from '@/utils/auth.ts'
 
 const router = useRouter()
 const formRef = ref<FormInst | null>(null)
@@ -184,6 +186,11 @@ const toLogin = (e: MouseEvent) => {
       const token = await login(loginUser)
       if (token) {
         localStorage.setItem("token", token)
+        // 新增：登录成功后立即获取用户信息
+        const user = await getUserProfile();
+        if (user) {
+          setAuthUser(user);
+        }
         await router.push({ name: RouteEnum.HOME });
         message.success('登录成功!')
       } else {
