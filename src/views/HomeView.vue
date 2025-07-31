@@ -18,7 +18,7 @@ onMounted(async () => {
   authUser.value = await getUserProfile()
   if (!authUser.value) {
     message.error('用户信息已失效，请重新登录！')
-    router.push('/login')
+    await router.push('/login')
   }
   setAuthUser(authUser.value)
 })
