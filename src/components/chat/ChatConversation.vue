@@ -1,7 +1,7 @@
 <template>
   <n-list v-for="(value, key) in conversationMap" :key="key" class="group-chat" :show-divider="false">
-    <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(value[0]) }}</n-tag></div>
-    <n-list-item v-for="msg in value[1]" :key="msg.id" :class="msg.sender === 'BobDylan' ? 'box-right' : 'box-left'">
+    <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(key) }}</n-tag></div>
+    <n-list-item v-for="msg in value" :key="msg.id" :class="msg.sender === 'BobDylan' ? 'box-right' : 'box-left'">
       <template #prefix v-if="msg.sender !== 'BobDylan'">
         <n-avatar
           class="chat-avatar"
@@ -29,119 +29,110 @@
 
 <script setup lang="ts">
 import type { Msg } from '@/models/msg.ts'
+import type { ConversationResponse, ConversationMsgResponse } from '@/models/conversation.ts'
+import { getConversationHis } from '@/api/conversation.ts'
+import { onMounted, ref } from 'vue'
 
+const props = defineProps<{
+  conversation: ConversationResponse | undefined;
+}>();
 // key: 上一次对话时间分组, value: 对话内容集合
-const conversationMap: Map<Date, Msg[]> = new Map();
-conversationMap.set(new Date("2023-04-26 03:07:45"), [
-  {
-    id: '1701',
-    sender: 'Oasis',
-    receiver: 'BobDylan',
-    type: 'text',
-    content: "渔王还想继续做渔王!",
-    time: '2024-12-31 23:59:59',
-    avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
-  },
-]);
-conversationMap.set(new Date("2024-12-30 14:59:45"), [
-  {
-    id: '1701',
-    sender: 'Oasis',
-    receiver: 'BobDylan',
-    type: 'text',
-    content: "渔王还想继续做渔王!",
-    time: '2024-12-31 23:59:59',
-    avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
-  },
-]); 
-conversationMap.set(new Date("2024-12-31 10:32:45"), [
-  {
-    id: '1701',
-    sender: 'BobDylan',
-    receiver: 'Oasis',
-    type: 'text',
-    content: "Let it be!",
-    time: '2024-12-31 23:59:59',
-    avatar: 'https://img1.baidu.com/it/u=507077318,2244959797&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=667'
-  },
-]);  
-conversationMap.set(new Date(), [
-  {
-    id: '1701',
-    sender: 'Oasis',
-    receiver: 'BobDylan',
-    type: 'text',
-    content: "电灯熄灭, 物换星移, 泥牛入海!",
-    time: '2024-12-31 23:59:59',
-    avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
-  },
-  {
-    id: '1701',
-    sender: 'BobDylan',
-    receiver: 'Oasis',
-    type: 'text',
-    content: "Don't look back in anger!",
-    time: '2024-12-31 23:59:59',
-    avatar: 'https://img1.baidu.com/it/u=507077318,2244959797&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=667'
-  },
-  {
-    id: '1701',
-    sender: 'Oasis',
-    receiver: 'BobDylan',
-    type: 'text',
-    content: "黑暗好像一颗巨石按在胸口!",
-    time: '2024-12-31 23:59:59',
-    avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
-  },
-  {
-    id: '1701',
-    sender: 'Oasis',
-    receiver: 'BobDylan',
-    type: 'text',
-    content: "独脚大盗, 百万富翁, 摸爬滚打!",
-    time: '2024-12-31 23:59:59',
-    avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
-  },
-  {
-    id: '1701',
-    sender: 'Oasis',
-    receiver: 'BobDylan',
-    type: 'text',
-    content: '奋勇呀然后休息呀<br>完成你伟大的人生!',
-    time: '2024-12-31 23:59:59',
-    avatar: 'https://img1.baidu.com/it/u=4287740108,2208289792&fm=253&fmt=auto&app=138&f=JPEG?w=800&h=1067'
-  },
-  {
-    id: '1701',
-    sender: 'BobDylan',
-    receiver: 'Oasis',
-    type: 'text',
-    content: '最新的打印机<br> 复制着彩色傀儡<br> 早上好我的罐头先生<br>让他带你去被工厂敲击!最新的打印机<br> 复制着彩色傀儡<br> 早上好我的罐头先生<br>让他带你去被工厂敲击!最新的打印机<br> 复制着彩色傀儡<br> 早上好我的罐头先生<br>让他带你去被工厂敲击!',
-    time: '2024-12-31 23:59:59',
-    avatar: 'https://img1.baidu.com/it/u=507077318,2244959797&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=667'
+const conversationMap = ref<Map<Date, ConversationMsgResponse[]>>(new Map())
+
+onMounted(async () => {
+  // Get conversation his
+  const conversationId = props.conversation?.id
+  if (!conversationId) {
+    return
   }
-]);
+  const msgList = await getConversationHis(conversationId)
+  conversationMap.value = getConversationMap(msgList)
+  console.log(conversationMap.value);
+  
+})
+
+const getConversationMap = (res: ConversationMsgResponse[]) => {
+  const groupedMap = new Map<Date, ConversationMsgResponse[]>()
+  
+  if (!res || res.length === 0) {
+    return groupedMap
+  }
+  
+  // Sort messages by timestamp (oldest first)
+  const sortedMessages = res.sort((a, b) => {
+    const timeA = new Date(a.time)
+    const timeB = new Date(b.time)
+    return timeA.getTime() - timeB.getTime()
+  })
+  
+  let currentGroupKey: Date | null = null
+  let currentGroup: ConversationMsgResponse[] = []
+  
+  sortedMessages.forEach((message) => {
+    const messageTime = new Date(message.time)
+    
+    if (currentGroupKey === null) {
+      // First message, start a new group
+      currentGroupKey = messageTime
+      currentGroup = [message]
+    } else {
+      // Check if message is within 5 minutes of the current group
+      const timeDiff = Math.abs(messageTime.getTime() - currentGroupKey.getTime())
+      const fiveMinutes = 5 * 60 * 1000 // 5 minutes in milliseconds
+      
+      if (timeDiff <= fiveMinutes) {
+        // Add to current group
+        currentGroup.push(message)
+      } else {
+        // Save current group and start a new one
+        groupedMap.set(currentGroupKey, [...currentGroup])
+        currentGroupKey = messageTime
+        currentGroup = [message]
+      }
+    }
+  })
+  
+  // Don't forget to add the last group
+  if (currentGroupKey && currentGroup.length > 0) {
+    groupedMap.set(currentGroupKey, [...currentGroup])
+  }
+  
+  return groupedMap
+}
 
 const getLastConversationTime = (date: Date) => {
-  const hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours();
-  const minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes();
-  let today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (date.getTime() > today.getTime()) {
-    // 当天对话
-    return `${hour}:${minute}`;
-  } else {
-    today.setMonth(0, 0);
-    const month = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1;
-    const day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate();
-    if (date.getTime() > today.getTime()) {
-      // 当年对话
-      return `${month}-${day} ${hour}:${minute}`;
-    } else {
-      // 非当年对话
-      return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}`;
-    }
-  }  
+  const now = new Date()
+  const messageDate = new Date(date)
+  
+  // Check if it's today
+  if (messageDate.toDateString() === now.toDateString()) {
+    return messageDate.toLocaleTimeString('zh-CN', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+  }
+  
+  // Check if it's yesterday
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (messageDate.toDateString() === yesterday.toDateString()) {
+    return '昨天'
+  }
+  
+  // Check if it's this year
+  if (messageDate.getFullYear() === now.getFullYear()) {
+    return messageDate.toLocaleDateString('zh-CN', { 
+      month: '2-digit', 
+      day: '2-digit' 
+    })
+  }
+  
+  // Different year
+  return messageDate.toLocaleDateString('zh-CN', { 
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit' 
+  })
 }
 </script>
 

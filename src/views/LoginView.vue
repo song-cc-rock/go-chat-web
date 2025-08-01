@@ -32,7 +32,7 @@
             <n-button type="primary" block strong @click="toLogin">
               登录
             </n-button>
-
+<!-- 
             <div class="more-login-container">
               <n-divider class="modern-divider">其他登录方式</n-divider>
               <div class="social-login-row">
@@ -57,7 +57,7 @@
                   </template>
                 </n-button>
               </div>
-            </div>
+            </div> -->
           </n-tab-pane>
           <n-tab-pane name="signup" tab="注册">
             <n-form :show-label="false" class="register-form" :model="registerForm" ref="registerRef" :rules="registerRules">
@@ -225,7 +225,7 @@ const redirectAuthUrl = async (authType: string) => {
   left: -20px;
   right: -20px;
   bottom: -20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #a8ff78 0%, #1aad19 100%);
   filter: blur(25px);
   z-index: -1;
 }
@@ -249,7 +249,7 @@ const redirectAuthUrl = async (authType: string) => {
 .login-card {
   border-radius: 20px;
   padding: 40px;
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 8px 32px rgba(31, 38, 135, 0.1);
   backdrop-filter: blur(30px);

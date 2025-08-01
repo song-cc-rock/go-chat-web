@@ -1,7 +1,7 @@
 <template>
   <div class="header">
     <div class="to-user">
-      <span class="chat-name-title">平克·弗洛伊德</span>
+      <span class="chat-name-title">{{ conversation?.nickName }}</span>
     </div>
     <n-button text>
       <n-icon size="30" :component="MoreIcon" class="more-btn" />
@@ -10,7 +10,7 @@
   </div>
   <div class="content">
     <n-scrollbar style="max-height: 100%">
-      <chat-conversation />
+      <chat-conversation :conversation="conversation" />
     </n-scrollbar>
   </div>
   <div class="footer">
@@ -44,6 +44,11 @@
 import { MoreHorizontal24Regular as MoreIcon, EmojiSparkle24Regular as EmojiIcon, DocumentAdd24Regular as FileIcon, History24Regular as ChatHisIcon,
   SlideMicrophone24Regular as CallPhoneIcon, Video24Regular as CallVideoIcon } from '@vicons/fluent'
 import ChatConversation from '@/components/chat/ChatConversation.vue'
+import type { ConversationResponse } from '@/models/conversation.ts'
+
+const props = defineProps<{
+  conversation: ConversationResponse | undefined;
+}>();
 </script>
 
 <style scoped>

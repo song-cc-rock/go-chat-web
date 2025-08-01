@@ -8,3 +8,13 @@ export interface ConversationResponse {
   lastSentUser: string,
   unreadCount: number;
 }
+
+export interface ConversationMsgResponse {
+  id: string;
+  sender: string;
+  receiver: string;
+  type: string;
+  content: string;
+  time: number;
+  avatar: string;
+}

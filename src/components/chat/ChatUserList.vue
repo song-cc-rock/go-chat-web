@@ -25,11 +25,13 @@ import { formatTimestamp } from '@/utils/date.ts'
 const props = defineProps<{
   chatUserList: ConversationResponse[] | undefined;
 }>();
+const emit = defineEmits(['select'])
 
 const currentChatUser = ref<ConversationResponse>()
 
 const selectChatUser = (user: ConversationResponse) => {
   currentChatUser.value = user;
+  emit('select', currentChatUser.value)
 }
 
 const formatLastTime = (timestamp: number) => {

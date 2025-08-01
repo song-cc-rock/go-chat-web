@@ -16,7 +16,7 @@
       <contact-user-list @setCurrent="setCurrentContact"/>
     </template>
     <template #2>
-      <contact-group-detail :current-group="contactUser" v-if="contactUser && contactUser.type === 'group'" />
+      <contact-group-detail :current-group="contactUser as Group" v-if="contactUser && contactUser.type === 'group'" />
       <contact-user-detail :current-user="contactUser" v-else-if="contactUser && contactUser.type === 'user'"/>
     </template>
   </n-split>
