@@ -143,9 +143,10 @@ let timer : number | undefined;
 const getMyCode = async () => {
   if (!codeFinish.value) {
     if (!registerForm.value.account) {
-      message.error('请填写手机或邮箱!');
-      return
-    }
+        message.error('请填写手机或邮箱!');
+        return;
+      }
+    
     await sendVerifyCode(registerForm.value.account);
     message.success('验证码已发送，请注意查收!');
     codeFinish.value = true;
@@ -248,13 +249,13 @@ const redirectAuthUrl = async (authType: string) => {
 
 .login-card {
   border-radius: 20px;
-  padding: 40px;
+  padding: 30px;
   background-color: rgba(255, 255, 255, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 8px 32px rgba(31, 38, 135, 0.1);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  min-height: 480px;
+  min-height: 420px;
   display: flex;
   flex-direction: column;
 }
@@ -445,7 +446,7 @@ h2 span {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 340px;
+  min-height: 280px;
 }
 
 :deep(.n-tabs .n-tab) {

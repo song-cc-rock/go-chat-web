@@ -50,15 +50,20 @@
 
 <script setup lang="ts">
 import type { MenuOption } from 'naive-ui'
-import { type Component, onMounted } from 'vue'
+import { type Component, onMounted, onUnmounted } from 'vue'
 import { WechatOutlined as ChatIcon, UsergroupAddOutlined as GroupIcon, PoweroffOutlined as PowerIcon} from '@vicons/antd'
 import { NIcon, createDiscreteApi } from 'naive-ui'
 import { h, ref } from 'vue'
-import router from "@/router/index.js";
+import router from "@/router/index.js"
 import { clearAuthUser, getAuthUser } from '@/utils/auth.ts'
 import { getUnreadCount } from '@/api/user.ts'
 import UserTipContainer from '@/components/UserTipContainer.vue'
+import WebSocketService from '@/utils/websocket.ts'
+import { provide } from 'vue'
 
+const wsService = ref<WebSocketService | null>(null)
+// provide ws service early
+provide('wsService', wsService)
 const { message } = createDiscreteApi(["message"])
 const renderIcon = (icon: Component) => {
   return () => h(NIcon, null, { default: () => h(icon) })
@@ -97,7 +102,15 @@ const keepChat = () => {
 onMounted(async () => {
   if (authUser) {
     unReadCount.value = await getUnreadCount(authUser.id)
+    // init ws conn
+    wsService.value = new WebSocketService(authUser.id)
+    wsService.value?.connect()
   }
+})
+
+onUnmounted(() => {
+  // disconnect ws conn
+  wsService.value?.disconnect()
 })
 </script>
 

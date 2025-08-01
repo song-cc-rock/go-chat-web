@@ -1,6 +1,6 @@
 export interface ConversationResponse {
   id: string;
-  targetUserID: string;
+  targetUserId: string;
   nickName: string;
   avatar: string;
   lastMessage: string;
@@ -11,10 +11,17 @@ export interface ConversationResponse {
 
 export interface ConversationMsgResponse {
   id: string;
-  sender: string;
+  send: string;
   receiver: string;
-  type: string;
   content: string;
-  time: number;
+  created_at: number;
   avatar: string;
+}
+
+export interface SendMsgRequest {
+  conversation_id: string;
+  send: string;
+  receiver: string;
+  content: string;
+  created_at: number;
 }

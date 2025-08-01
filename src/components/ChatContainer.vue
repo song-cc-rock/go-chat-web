@@ -35,8 +35,8 @@
         </n-button>
       </div>
     </div>
-    <n-input type="textarea" class="chat-area" placeholder=""/>
-    <n-button type="primary" class="send-btn" ghost >发送(S)</n-button>
+    <n-input type="textarea" class="chat-area" placeholder="" v-model:value="messageContent"/>
+    <n-button type="primary" class="send-btn" ghost @click="sendMessage">发送(S)</n-button>
   </div>
 </template>
 
@@ -45,10 +45,33 @@ import { MoreHorizontal24Regular as MoreIcon, EmojiSparkle24Regular as EmojiIcon
   SlideMicrophone24Regular as CallPhoneIcon, Video24Regular as CallVideoIcon } from '@vicons/fluent'
 import ChatConversation from '@/components/chat/ChatConversation.vue'
 import type { ConversationResponse } from '@/models/conversation.ts'
+import { ref, inject, type Ref } from 'vue'
+import WebSocketService from '@/utils/websocket.ts'
+import { getAuthUser } from '@/utils/auth.ts'
 
 const props = defineProps<{
   conversation: ConversationResponse | undefined;
 }>();
+const authUser = getAuthUser()
+const messageContent = ref('')
+// inject ws service
+const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
+
+const sendMessage = () => {
+  if (!messageContent.value.trim() || !props.conversation?.id || !wsService.value) {
+    return
+  }
+
+  // send message
+  wsService.value.sendMessage({
+    conversation_id: props.conversation.id,
+    send: authUser.id,
+    receiver: props.conversation.targetUserId,
+    content: messageContent.value,
+    created_at: Date.now()
+  })
+  messageContent.value = ''
+}
 </script>
 
 <style scoped>

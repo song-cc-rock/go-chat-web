@@ -20,6 +20,20 @@ request.interceptors.request.use(config => {
   return config
 })
 
+// 添加标志位用于跟踪401错误是否已处理
+let isRefreshing = false;
+
+/**
+ * 设置路由变化监听器以重置刷新状态
+ * 应在应用初始化后调用此函数
+ */
+export function setupRouterListener() {
+  // 监听路由变化，重置刷新状态
+  router.afterEach(() => {
+    isRefreshing = false;
+  });
+}
+
 request.interceptors.response.use(
   (response) => {
     const { code, data, msg } = response.data
@@ -33,9 +47,15 @@ request.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token')
-      message.error('未授权，请重新登录')
-      router.push('/login')
+      // 只有当没有正在处理的401错误时才执行处理逻辑
+      if (!isRefreshing) {
+        isRefreshing = true;
+        localStorage.removeItem('token')
+        message.error('未授权，请重新登录')
+        router.push('/login')
+      }
+      // 返回被拒绝的Promise，保持错误处理一致性
+      return Promise.reject(new Error('未授权，请重新登录'))
     }
     message.error(error.response.data.msg || '网络异常')
     return Promise.reject(error)

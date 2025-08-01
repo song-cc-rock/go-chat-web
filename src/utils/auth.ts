@@ -22,3 +22,7 @@ export function getAuthUser() {
 export function clearAuthUser() {
   localStorage.removeItem(USER_KEY)
 }
+
+export function getAuthToken() {
+  return localStorage.getItem('token')
+}

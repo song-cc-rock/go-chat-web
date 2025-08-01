@@ -1,8 +1,8 @@
 <template>
-  <n-list v-for="(value, key) in conversationMap" :key="key" class="group-chat" :show-divider="false">
-    <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(key) }}</n-tag></div>
-    <n-list-item v-for="msg in value" :key="msg.id" :class="msg.sender === 'BobDylan' ? 'box-right' : 'box-left'">
-      <template #prefix v-if="msg.sender !== 'BobDylan'">
+  <n-list v-for="[key, value] in Array.from(conversationMap.entries())" :key="key.getTime()" class="group-chat" :show-divider="false">
+    <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(key.getTime()) }}</n-tag></div>
+    <n-list-item v-for="msg in value" :key="msg.id" :class="msg.send === authUser.nickName ? 'box-left' : 'box-right'">
+      <template #prefix v-if="msg.send === authUser.nickName">
         <n-avatar
           class="chat-avatar"
           round
@@ -10,7 +10,7 @@
           :src="msg.avatar"
         />
       </template>
-      <template #suffix v-if="msg.sender === 'BobDylan'">
+      <template #suffix v-if="msg.send !== authUser.nickName">
         <n-avatar
           class="chat-avatar"
           round
@@ -28,58 +28,113 @@
 </template>
 
 <script setup lang="ts">
-import type { Msg } from '@/models/msg.ts'
 import type { ConversationResponse, ConversationMsgResponse } from '@/models/conversation.ts'
 import { getConversationHis } from '@/api/conversation.ts'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch, inject, type Ref } from 'vue'
+import { getAuthUser } from '@/utils/auth.ts'
+import WebSocketService from '@/utils/websocket.ts'
 
 const props = defineProps<{
   conversation: ConversationResponse | undefined;
 }>();
 // key: 上一次对话时间分组, value: 对话内容集合
 const conversationMap = ref<Map<Date, ConversationMsgResponse[]>>(new Map())
+const authUser = getAuthUser()
+// 注入WebSocket服务
+const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
 
 onMounted(async () => {
-  // Get conversation his
+  // 监听新消息
+  if (wsService.value) {
+    watch(
+      () => wsService.value?.messages.value,
+      (newMessages) => {
+        if (newMessages && newMessages.length > 0) {
+          const lastMessage = newMessages[newMessages.length - 1]
+          // 检查消息是否属于当前对话
+          if (lastMessage && props.conversation && 
+              (lastMessage.send === props.conversation.targetUserId || 
+               lastMessage.receiver === props.conversation.targetUserId)) {
+            updateConversationMap([lastMessage])
+            scrollToBottom()
+          }
+        }
+      },
+      { deep: true }
+    )
+  }
+
+  // 获取历史消息
   const conversationId = props.conversation?.id
   if (!conversationId) {
     return
   }
   const msgList = await getConversationHis(conversationId)
   conversationMap.value = getConversationMap(msgList)
-  console.log(conversationMap.value);
-  
+  scrollToBottom()
 })
+
+// 更新对话映射
+const updateConversationMap = (newMessages: ConversationMsgResponse[]) => {
+  const currentMap = conversationMap.value
+  newMessages.forEach((message) => {
+    const messageTime = new Date(message.created_at)
+    let added = false
+
+    // 尝试添加到现有组
+    currentMap.forEach((messages, key) => {
+      const timeDiff = messageTime.getTime() - key.getTime()
+      const fiveMinutes = 5 * 60 * 1000 // 5分钟
+
+      if (timeDiff <= fiveMinutes) {
+        messages.push(message)
+        added = true
+      }
+    })
+
+    // 如果没有添加到现有组，创建新组
+    if (!added) {
+      currentMap.set(messageTime, [message])
+    }
+  })
+
+  // 更新Map以触发重新渲染
+  conversationMap.value = new Map(currentMap)
+}
+
+// 滚动到底部
+const scrollToBottom = () => {
+  setTimeout(() => {
+    const scrollContainer = document.querySelector('.n-scrollbar-container')
+    if (scrollContainer) {
+      scrollContainer.scrollTop = scrollContainer.scrollHeight
+    }
+  }, 100)
+}
 
 const getConversationMap = (res: ConversationMsgResponse[]) => {
   const groupedMap = new Map<Date, ConversationMsgResponse[]>()
-  
+
   if (!res || res.length === 0) {
     return groupedMap
   }
-  
-  // Sort messages by timestamp (oldest first)
-  const sortedMessages = res.sort((a, b) => {
-    const timeA = new Date(a.time)
-    const timeB = new Date(b.time)
-    return timeA.getTime() - timeB.getTime()
-  })
-  
+
   let currentGroupKey: Date | null = null
   let currentGroup: ConversationMsgResponse[] = []
-  
-  sortedMessages.forEach((message) => {
-    const messageTime = new Date(message.time)
-    
+
+  res.forEach((message) => {
+    const messageTime = new Date(message.created_at)
+
     if (currentGroupKey === null) {
       // First message, start a new group
       currentGroupKey = messageTime
       currentGroup = [message]
     } else {
-      // Check if message is within 5 minutes of the current group
-      const timeDiff = Math.abs(messageTime.getTime() - currentGroupKey.getTime())
+      // Check if message is within 5 minutes of the current group's start time
+      // Since messages are sorted, messageTime is always >= currentGroupKey, so no Math.abs needed.
+      const timeDiff = messageTime.getTime() - currentGroupKey.getTime()
       const fiveMinutes = 5 * 60 * 1000 // 5 minutes in milliseconds
-      
+
       if (timeDiff <= fiveMinutes) {
         // Add to current group
         currentGroup.push(message)
@@ -91,48 +146,37 @@ const getConversationMap = (res: ConversationMsgResponse[]) => {
       }
     }
   })
-  
+
   // Don't forget to add the last group
   if (currentGroupKey && currentGroup.length > 0) {
     groupedMap.set(currentGroupKey, [...currentGroup])
   }
-  
+
   return groupedMap
 }
 
-const getLastConversationTime = (date: Date) => {
-  const now = new Date()
-  const messageDate = new Date(date)
-  
-  // Check if it's today
-  if (messageDate.toDateString() === now.toDateString()) {
-    return messageDate.toLocaleTimeString('zh-CN', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    })
+const getLastConversationTime = (time: number) => {
+  const date = new Date(time * 1000);
+  const hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours();
+  const minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes();
+  let today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date.getTime() > today.getTime()) {
+    // 当天对话
+    return `${hour}:${minute}`;
+  } else {
+    const currentYear = new Date().getFullYear();
+    const dateYear = date.getFullYear();
+    const month = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1;
+    const day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate();
+    if (dateYear === currentYear) {
+      // 当年对话
+      return `${month}-${day} ${hour}:${minute}`;
+    } else {
+      // 非当年对话
+      return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}`;
+    }
   }
-  
-  // Check if it's yesterday
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (messageDate.toDateString() === yesterday.toDateString()) {
-    return '昨天'
-  }
-  
-  // Check if it's this year
-  if (messageDate.getFullYear() === now.getFullYear()) {
-    return messageDate.toLocaleDateString('zh-CN', { 
-      month: '2-digit', 
-      day: '2-digit' 
-    })
-  }
-  
-  // Different year
-  return messageDate.toLocaleDateString('zh-CN', { 
-    year: 'numeric',
-    month: '2-digit', 
-    day: '2-digit' 
-  })
 }
 </script>
 
