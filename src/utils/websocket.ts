@@ -24,7 +24,12 @@ class WebSocketService {
       return
     }
     // Set url
-    const wsUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`
+    const envWsUrl = (import.meta as any).env?.VITE_WS_URL as string | undefined
+    const wsUrl = envWsUrl && envWsUrl.length > 0
+      ? envWsUrl
+      : (import.meta.env.DEV
+        ? 'ws://127.0.0.1:8080/ws'
+        : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`)
     // Create connect
     this.socket = new WebSocket(wsUrl)
   

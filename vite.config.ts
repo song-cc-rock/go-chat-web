@@ -34,13 +34,12 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
-  // 配置前端服务地址和端口,默认端口是5173
   server: {
     host: '0.0.0.0',
     port: 8888,
     proxy: {
       '/api': {
-        target: 'https://ceb379b9b9c8.ngrok-free.app',
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
