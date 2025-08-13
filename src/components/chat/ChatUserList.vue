@@ -46,7 +46,7 @@ const formatLastTime = (timestamp: number) => {
 }
 
 const sentByTarget = (user: ConversationResponse) => {
-  return user.lastSentUser === user.targetUserID
+  return user.lastSentUser === user.targetUserId
 }
 </script>
 

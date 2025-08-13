@@ -1,4 +1,3 @@
-import { ref } from 'vue'
 import type { ConversationMsgResponse, SendMsgRequest } from '@/models/conversation.ts'
 import { getAuthToken } from '@/utils/auth'
 
@@ -7,14 +6,15 @@ class WebSocketService {
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 1000 // ms
-  public messages = ref<ConversationMsgResponse[]>([])
-  public connected = ref(false)
+  public messages: ConversationMsgResponse[] = []
+  public connected = false
   private authToken: string | null = null
 
   constructor(private userId: string) {
     // Get auth token
     this.authToken = getAuthToken()
-    this.connected.value = false
+    this.connected = false
+    this.messages = []
   }
 
   // Init connection
@@ -29,11 +29,7 @@ class WebSocketService {
     this.socket = new WebSocket(wsUrl)
   
     this.socket.onopen = () => {
-      if (this.connected && typeof this.connected === 'object' && 'value' in this.connected) {
-        this.connected.value = true
-      } else {
-        console.error('connected is not a valid ref object')
-      }
+      this.connected = true
       this.reconnectAttempts = 0
       this.sendAuthMessage()
     }
@@ -41,7 +37,7 @@ class WebSocketService {
     this.socket.onmessage = (event) => {
       try {
         const message: ConversationMsgResponse = JSON.parse(event.data)
-        this.messages.value.push(message)
+        this.messages.push(message)
       } catch (error) {
         console.error('parse ws message error:', error)
       }
@@ -50,7 +46,7 @@ class WebSocketService {
     this.socket.onclose = (event) => {
       console.log(`WebSocket connection closed. Code: ${event.code}, Reason: ${event.reason}`)
       if (this.connected && typeof this.connected === 'object' && 'value' in this.connected) {
-        this.connected.value = false
+        this.connected = false
       } else {
         console.error('connected is not a valid ref object')
       }
@@ -59,7 +55,7 @@ class WebSocketService {
 
     this.socket.onerror = (error) => {
       console.error('WebSocket error occurred:', error)
-      this.connected.value = false
+      this.connected = false
       this.socket?.close()
       this.reconnect()
     }

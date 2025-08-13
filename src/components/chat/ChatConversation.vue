@@ -1,8 +1,8 @@
 <template>
   <n-list v-for="[key, value] in Array.from(conversationMap.entries())" :key="key.getTime()" class="group-chat" :show-divider="false">
     <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(key.getTime()) }}</n-tag></div>
-    <n-list-item v-for="msg in value" :key="msg.id" :class="msg.send === authUser.nickName ? 'box-left' : 'box-right'">
-      <template #prefix v-if="msg.send === authUser.nickName">
+    <n-list-item v-for="msg in value" :key="msg.id" :class="msg.send === authUser.id ? 'box-right' : 'box-left'">
+      <template #suffix v-if="msg.send === authUser.id">
         <n-avatar
           class="chat-avatar"
           round
@@ -10,7 +10,7 @@
           :src="msg.avatar"
         />
       </template>
-      <template #suffix v-if="msg.send !== authUser.nickName">
+      <template #prefix v-if="msg.send !== authUser.id">
         <n-avatar
           class="chat-avatar"
           round
@@ -47,7 +47,7 @@ onMounted(async () => {
   // 监听新消息
   if (wsService.value) {
     watch(
-      () => wsService.value?.messages.value,
+      () => wsService.value?.messages,
       (newMessages) => {
         if (newMessages && newMessages.length > 0) {
           const lastMessage = newMessages[newMessages.length - 1]
@@ -78,23 +78,24 @@ onMounted(async () => {
 const updateConversationMap = (newMessages: ConversationMsgResponse[]) => {
   const currentMap = conversationMap.value
   newMessages.forEach((message) => {
-    const messageTime = new Date(message.created_at)
+    // 将秒级时间戳转换为毫秒级再创建Date对象
+    const messageTime = new Date(message.created_at);
     let added = false
 
     // 尝试添加到现有组
     currentMap.forEach((messages, key) => {
-      const timeDiff = messageTime.getTime() - key.getTime()
-      const fiveMinutes = 5 * 60 * 1000 // 5分钟
+      const timeDiff = messageTime.getTime() - key.getTime();
+      const fiveMinutes = 5 * 60 * 1000;
 
       if (timeDiff <= fiveMinutes) {
-        messages.push(message)
-        added = true
+        messages.push(message);
+        added = true;
       }
     })
 
     // 如果没有添加到现有组，创建新组
     if (!added) {
-      currentMap.set(messageTime, [message])
+      currentMap.set(messageTime, [message]);
     }
   })
 
@@ -123,7 +124,8 @@ const getConversationMap = (res: ConversationMsgResponse[]) => {
   let currentGroup: ConversationMsgResponse[] = []
 
   res.forEach((message) => {
-    const messageTime = new Date(message.created_at)
+    // 将秒级时间戳转换为毫秒级再创建Date对象
+    const messageTime = new Date(message.created_at * 1000)
 
     if (currentGroupKey === null) {
       // First message, start a new group
@@ -156,11 +158,17 @@ const getConversationMap = (res: ConversationMsgResponse[]) => {
 }
 
 const getLastConversationTime = (time: number) => {
-  const date = new Date(time * 1000);
+  // 创建Date对象（time是秒级时间戳）
+  const date = new Date(time);
+  
+  // 使用UTC方法获取小时和分钟，避免时区偏差
   const hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours();
   const minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes();
+
+  // 创建当天本地时间（0点0分0秒）
   let today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
   if (date.getTime() > today.getTime()) {
     // 当天对话
     return `${hour}:${minute}`;

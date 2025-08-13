@@ -62,14 +62,27 @@ const sendMessage = () => {
     return
   }
 
-  // send message
-  wsService.value.sendMessage({
-    conversation_id: props.conversation.id,
+  // Create message object
+  const newMessage = {
+    id: `temp-${Date.now()}`,
     send: authUser.id,
     receiver: props.conversation.targetUserId,
     content: messageContent.value,
-    created_at: Date.now()
+    created_at: Date.now(),
+    avatar: authUser.avatar || '',
+  }
+
+  // Send message to server
+  wsService.value.sendMessage({
+    ...newMessage,
+    conversation_id: props.conversation.id,
   })
+
+  // Add message to local messages array immediately
+  if (wsService.value && wsService.value.messages) {
+    wsService.value.messages.push(newMessage)
+  }
+
   messageContent.value = ''
 }
 </script>
