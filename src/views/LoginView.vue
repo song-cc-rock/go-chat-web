@@ -138,7 +138,7 @@ const remainingTime = reactive ({
   seconds: totalTime
 })
 // countdown timer
-let timer : number | undefined;
+let timer : ReturnType<typeof setInterval> | undefined;
 
 const getMyCode = async () => {
   if (!codeFinish.value) {
@@ -217,29 +217,31 @@ const redirectAuthUrl = async (authType: string) => {
   height: 100vh;
   overflow: hidden;
   padding-right: 10vw;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
 .login-container::before {
-  content: '';
-  position: absolute;
-  top: -20px;
-  left: -20px;
-  right: -20px;
-  bottom: -20px;
-  background: linear-gradient(135deg, #a8ff78 0%, #1aad19 100%);
-  filter: blur(25px);
-  z-index: -1;
-}
-
-.login-container::after {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 30% 20%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-              radial-gradient(circle at 70% 80%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
+  background: rgba(255, 255, 255, 0.1);
+  z-index: -1;
+}
+
+.login-container::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 50%;
+  filter: blur(60px);
   z-index: -1;
 }
 
@@ -248,13 +250,13 @@ const redirectAuthUrl = async (authType: string) => {
 }
 
 .login-card {
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 30px;
-  background-color: rgba(255, 255, 255, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 8px 32px rgba(31, 38, 135, 0.1);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   min-height: 420px;
   display: flex;
   flex-direction: column;
@@ -280,19 +282,13 @@ h2 {
   font-size: 30px;
   font-weight: 700;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #2c3e50;
   margin: 0;
   letter-spacing: -0.3px;
 }
 
 h2 span {
-  background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #2c3e50;
 }
 
 .login-form .n-form-item,

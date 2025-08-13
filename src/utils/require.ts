@@ -3,9 +3,10 @@ import { createDiscreteApi } from 'naive-ui'
 import router from '@/router'
 
 const { message } = createDiscreteApi(["message"])
+const baseURL = process.env.NODE_ENV === 'production' ? '' : '/api'
 
 export const request = axios.create({
-  baseURL: '/api/v1',
+  baseURL: baseURL + '/v1',
   timeout: 5000,
   headers: {
     'Content-Type': 'application/json'
@@ -63,7 +64,7 @@ request.interceptors.response.use(
 )
 
 export const rawClient = axios.create({
-  baseURL: '/api',
+  baseURL: baseURL,
   timeout: 5000,
   headers: {
     'Content-Type': 'application/json'

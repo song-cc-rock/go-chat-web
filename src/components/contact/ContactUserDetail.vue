@@ -13,8 +13,8 @@
               <CardIcon />
             </n-icon>
           </div>
-          <div class="member-email second-info">邮箱 :<span class="right-text">{{props.currentUser.email}}</span></div>
-          <div class="member-phone second-info">手机 :<span class="right-text">{{props.currentUser.phone}}</span></div>
+          <div v-if="isContactUser(props.currentUser)" class="member-email second-info">邮箱 :<span class="right-text">{{props.currentUser.email}}</span></div>
+          <div v-if="isContactUser(props.currentUser)" class="member-phone second-info">手机 :<span class="right-text">{{props.currentUser.phone}}</span></div>
         </div>
       </div>
     </div>
@@ -49,6 +49,10 @@ import type { Group } from '@/models/group.ts'
 const props = defineProps<{
   currentUser: ContactUser|Group;
 }>();
+
+const isContactUser = (user: ContactUser|Group): user is ContactUser => {
+  return 'email' in user && 'phone' in user;
+};
 </script>
 
 <style scoped>

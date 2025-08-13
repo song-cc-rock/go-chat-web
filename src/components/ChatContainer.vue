@@ -35,8 +35,14 @@
         </n-button>
       </div>
     </div>
-    <n-input type="textarea" class="chat-area" placeholder="" v-model:value="messageContent"/>
-    <n-button type="primary" class="send-btn" ghost @click="sendMessage">发送(S)</n-button>
+    <n-input 
+      type="textarea" 
+      class="chat-area" 
+      placeholder="" 
+      v-model:value="messageContent"
+      @keydown="handleKeyDown"
+    />
+    <n-button type="primary" class="send-btn" ghost @click="sendMessage">发送</n-button>
   </div>
 </template>
 
@@ -85,6 +91,13 @@ const sendMessage = () => {
 
   messageContent.value = ''
 }
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+};
 </script>
 
 <style scoped>
@@ -161,10 +174,34 @@ const sendMessage = () => {
 
 .left-btn button {
   margin-right: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.left-btn button:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.left-btn button:active {
+  transform: translateY(0) scale(1.02);
+  transition: all 0.1s ease;
 }
 
 .right-btn button {
   margin-right: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.right-btn button:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.right-btn button:active {
+  transform: translateY(0) scale(1.02);
+  transition: all 0.1s ease;
 }
 
 .chat-area {
@@ -182,6 +219,17 @@ const sendMessage = () => {
   float: inline-end;
   right: 24px;
   bottom: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+}
+
+.send-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.send-btn:active {
+  transform: translateY(0) scale(0.98);
+  transition: all 0.1s ease;
 }
 
 :deep(.n-input.n-input--textarea.n-input--resizable .n-input-wrapper) {

@@ -24,7 +24,7 @@ class WebSocketService {
       return
     }
     // Set url
-    const wsUrl = `ws://127.0.0.1:8080/ws`
+    const wsUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`
     // Create connect
     this.socket = new WebSocket(wsUrl)
   
