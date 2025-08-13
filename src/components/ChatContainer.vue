@@ -76,6 +76,7 @@ const sendMessage = () => {
     content: messageContent.value,
     created_at: Date.now(),
     avatar: authUser.avatar || '',
+    status: 'sent'
   }
 
   // Send message to server

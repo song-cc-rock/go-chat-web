@@ -21,6 +21,16 @@
       <n-thing>
         <div class="chat-box">
           <p v-html="msg.content" />
+          <div v-if="msg.send === authUser.id" class="status-wrap">
+            <n-icon v-if="msg.status === 'sent'" size="16" class="status-icon spin">
+              <component :is="LoadingIcon" />
+            </n-icon>
+            <n-button v-else-if="msg.status === 'failed'" text size="tiny" class="status-icon resend-btn" @click="onResend(msg)">
+              <n-icon size="16">
+                <component :is="WarningIcon" />
+              </n-icon>
+            </n-button>
+          </div>
         </div>
       </n-thing>
     </n-list-item>
@@ -33,6 +43,7 @@ import { getConversationHis } from '@/api/conversation.ts'
 import { onMounted, ref, watch, inject, type Ref } from 'vue'
 import { getAuthUser } from '@/utils/auth.ts'
 import WebSocketService from '@/utils/websocket.ts'
+import { ArrowClockwise24Regular as LoadingIcon, Alert24Regular as WarningIcon } from '@vicons/fluent'
 
 const props = defineProps<{
   conversation: ConversationResponse | undefined;
@@ -63,16 +74,22 @@ onMounted(async () => {
       { deep: true }
     )
   }
-
-  // 获取历史消息
-  const conversationId = props.conversation?.id
-  if (!conversationId) {
-    return
-  }
-  const msgList = await getConversationHis(conversationId)
-  conversationMap.value = getConversationMap(msgList)
-  scrollToBottom()
 })
+
+// 当选中的会话发生变化时，重新加载历史消息并重置分组
+watch(
+  () => props.conversation?.id,
+  async (newId) => {
+    if (!newId) {
+      conversationMap.value = new Map()
+      return
+    }
+    const msgList = await getConversationHis(newId)
+    conversationMap.value = getConversationMap(msgList)
+    scrollToBottom()
+  },
+  { immediate: true }
+)
 
 // 更新对话映射
 const updateConversationMap = (newMessages: ConversationMsgResponse[]) => {
@@ -161,7 +178,6 @@ const getLastConversationTime = (time: number) => {
   // 创建Date对象（time是秒级时间戳）
   const date = new Date(time);
   
-  // 使用UTC方法获取小时和分钟，避免时区偏差
   const hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours();
   const minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes();
 
@@ -185,6 +201,27 @@ const getLastConversationTime = (time: number) => {
       return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}`;
     }
   }
+}
+
+const onResend = (msg: ConversationMsgResponse) => {
+  if (!props.conversation || !wsService.value) return
+  // reuse the same content to resend; create a new local message object
+  const newMessage: ConversationMsgResponse = {
+    id: `temp-${Date.now()}`,
+    send: authUser.id,
+    receiver: props.conversation.targetUserId,
+    content: msg.content,
+    created_at: Date.now(),
+    avatar: authUser.avatar || '',
+    status: 'sent'
+  }
+  // push immediately
+  wsService.value.messages.push(newMessage)
+  // send
+  wsService.value.sendMessage({
+    ...newMessage,
+    conversation_id: props.conversation.id,
+  })
 }
 </script>
 
@@ -283,4 +320,31 @@ const getLastConversationTime = (time: number) => {
   text-align: center;
   margin-bottom: 10px;
 }  
+
+.status-wrap {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+}
+
+.status-icon {
+  vertical-align: middle;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.resend-btn {
+  padding: 0;
+  margin-left: 4px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.spin {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 </style>

@@ -16,6 +16,7 @@ export interface ConversationMsgResponse {
   content: string;
   created_at: number;
   avatar: string;
+  status: string;
 }
 
 export interface SendMsgRequest {
