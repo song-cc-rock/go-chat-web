@@ -38,6 +38,7 @@ import { getConversationList, clearConversationUnreadCount } from '@/api/convers
 import { getAuthUser } from '@/utils/auth.ts'
 import type { ConversationResponse, ConversationMsgResponse } from '@/models/conversation.ts'
 import WebSocketService from '@/utils/websocket.ts'
+import eventBus from '@/utils/eventBus.ts'
 
 const authUser = getAuthUser()
 const conversations = ref<ConversationResponse[]>()
@@ -49,6 +50,8 @@ const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
 const reloadConversation = async () => {
   // 重新获取对话列表
   conversations.value = await getConversationList(authUser.id)
+  // 触发刷新未读消息计数的事件
+  eventBus.emit('refreshUnreadCount')
 }
 
 onMounted(async () => {

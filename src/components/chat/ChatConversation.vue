@@ -1,5 +1,6 @@
 <template>
-  <n-list v-for="[key, value] in Array.from(conversationMap.entries())" :key="key.getTime()" class="group-chat" :show-divider="false">
+  <div class="chat-container">
+    <n-list v-for="[key, value] in Array.from(conversationMap.entries())" :key="key.getTime()" class="group-chat" :show-divider="false">
     <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(key.getTime()) }}</n-tag></div>
     <n-list-item v-for="msg in value" :key="msg.id" :class="msg.send === authUser.id ? 'box-right' : 'box-left'">
       <template #suffix v-if="msg.send === authUser.id">
@@ -50,15 +51,29 @@
       </n-thing>
     </n-list-item>
   </n-list>
+
+  <!-- 滚动到底部按钮 -->
+  <n-button
+    v-if="showScrollToBottomBtn"
+    class="scroll-to-bottom-btn"
+    size="small"
+    round
+    @click="scrollToBottom"
+    :disabled="scrollToBottomDisabled"
+  >
+    <n-icon size="16"><component :is="ScrollDownIcon" /></n-icon>
+  </n-button>
+  </div>
 </template>
 
 <script setup lang="ts">
 import type { ConversationResponse, ConversationMsgResponse } from '@/models/conversation.ts'
 import { getConversationHis } from '@/api/conversation.ts'
-import { onMounted, ref, watch, inject, type Ref } from 'vue'
+import { onMounted, ref, watch, inject, type Ref, onUnmounted } from 'vue'
 import { getAuthUser } from '@/utils/auth.ts'
 import WebSocketService from '@/utils/websocket.ts'
-import { Loading3QuartersOutlined as LoadingIcon, ExclamationCircleOutlined as WarningIcon } from '@vicons/antd'
+import { Loading3QuartersOutlined as LoadingIcon, ExclamationCircleOutlined as WarningIcon, ArrowDownOutlined as ScrollDownIcon } from '@vicons/antd'
+import eventBus from '@/utils/eventBus.ts'
 
 const props = defineProps<{
   conversation: ConversationResponse | undefined;
@@ -76,25 +91,33 @@ onMounted(async () => {
       () => wsService.value?.messages,
       (newMessages) => {
         if (newMessages && newMessages.length > 0) {
-          // 检查是否有消息状态变化或新消息
+          // 分离状态更新消息和新消息
           const updatedMessages = newMessages.filter(msg => 
             msg.send === authUser.id && 
             (msg.status === 'success' || msg.status === 'failed')
           );
 
+          // 处理所有新消息
+          const relevantMessages = newMessages.filter(msg => 
+            props.conversation && (
+              msg.send === props.conversation.targetUserId || 
+              msg.receiver === props.conversation.targetUserId
+            )
+          );
+
+          // 先处理状态更新
           if (updatedMessages.length > 0) {
-            // 更新所有状态变化的消息
             updateConversationMap(updatedMessages);
+          }
+
+          // 再处理新消息
+          if (relevantMessages.length > 0) {
+            updateConversationMap(relevantMessages);
+          }
+
+          // 如果有任何消息被处理，滚动到底部
+          if (updatedMessages.length > 0 || relevantMessages.length > 0) {
             scrollToBottom();
-          } else {
-            // 处理新消息
-            const lastMessage = newMessages[newMessages.length - 1];
-            if (lastMessage && props.conversation && 
-                (lastMessage.send === props.conversation.targetUserId || 
-                 lastMessage.receiver === props.conversation.targetUserId)) {
-              updateConversationMap([lastMessage]);
-              scrollToBottom();
-            }
           }
         }
       },
@@ -112,6 +135,7 @@ watch(
       return
     }
     const msgList = await getConversationHis(newId)
+    eventBus.emit('refreshUnreadCount')
     conversationMap.value = getConversationMap(msgList)
     scrollToBottom()
   },
@@ -123,12 +147,13 @@ const updateConversationMap = (newMessages: ConversationMsgResponse[]) => {
   const currentMap = conversationMap.value
   newMessages.forEach((message) => {
     // 检查是否是更新现有消息的状态
-    // 查找现有消息，优先匹配id，其次匹配clientTmpId
+    // 查找现有消息，优先匹配id，其次匹配clientTmpId或actualId
+    // 优化匹配逻辑：优先匹配actualId，然后是clientTmpId，最后是id
     const existingEntry = Array.from(currentMap.entries()).find(([_, messages]) => {
       return messages.some(m => 
-        m.id === message.id || 
-        (m.clientTmpId && m.clientTmpId === message.clientTmpId) || 
-        (m.actualId && m.actualId === message.actualId)
+        (message.actualId && m.actualId === message.actualId) || 
+        (message.clientTmpId && m.clientTmpId === message.clientTmpId) || 
+        m.id === message.id
       );
     });
 
@@ -168,12 +193,47 @@ const updateConversationMap = (newMessages: ConversationMsgResponse[]) => {
 }
 
 // 滚动到底部
+// 控制滚动到底部按钮的显示
+const showScrollToBottomBtn = ref(false)
+const scrollToBottomDisabled = ref(false)
+
+// 监听滚动事件
+onMounted(() => {
+  const scrollContainer = document.querySelector('.n-scrollbar-container')
+  if (scrollContainer) {
+    const handleScroll = () => {
+      // 检查是否滚动到底部附近（100px内）
+      const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100
+      showScrollToBottomBtn.value = !isNearBottom
+    }
+
+    // 初始检查
+    handleScroll()
+
+    // 添加滚动监听
+    scrollContainer.addEventListener('scroll', handleScroll)
+
+    // 组件卸载时移除监听
+    onUnmounted(() => {
+      scrollContainer.removeEventListener('scroll', handleScroll)
+    })
+  }
+})
+
 const scrollToBottom = () => {
+  // 防止重复点击
+  scrollToBottomDisabled.value = true
   setTimeout(() => {
     const scrollContainer = document.querySelector('.n-scrollbar-container')
     if (scrollContainer) {
       scrollContainer.scrollTop = scrollContainer.scrollHeight
+      // 滚动后隐藏按钮
+      showScrollToBottomBtn.value = false
     }
+    // 恢复按钮状态
+    setTimeout(() => {
+      scrollToBottomDisabled.value = false
+    }, 500)
   }, 100)
 }
 
@@ -438,5 +498,15 @@ const onResend = (msg: ConversationMsgResponse) => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.scroll-to-bottom-btn {
+    position: absolute;
+    bottom: 5px;
+    left: 300px;
+    text-align: center;
+    z-index: 9999;
+    border: none;
+    background-color: transparent;
 }
 </style>

@@ -60,6 +60,7 @@ import { getUnreadCount } from '@/api/user.ts'
 import UserTipContainer from '@/components/UserTipContainer.vue'
 import WebSocketService from '@/utils/websocket.ts'
 import { provide } from 'vue'
+import eventBus from '@/utils/eventBus.ts'
 
 const wsService = ref<WebSocketService | null>(null)
 // provide ws service early
@@ -99,6 +100,13 @@ const keepChat = () => {
   message.info('Go Chat😊!')
 }
 
+// 定义刷新未读计数的函数
+const refreshUnreadCount = async () => {
+  if (authUser) {
+    unReadCount.value = await getUnreadCount(authUser.id)
+  }
+}
+
 onMounted(async () => {
   if (authUser) {
     unReadCount.value = await getUnreadCount(authUser.id)
@@ -106,11 +114,15 @@ onMounted(async () => {
     wsService.value = new WebSocketService(authUser.id)
     wsService.value?.connect()
   }
+  // 监听刷新未读计数事件
+  eventBus.on('refreshUnreadCount', refreshUnreadCount)
 })
 
 onUnmounted(() => {
   // disconnect ws conn
   wsService.value?.disconnect()
+  // 移除事件监听
+  eventBus.off('refreshUnreadCount', refreshUnreadCount)
 })
 </script>
 

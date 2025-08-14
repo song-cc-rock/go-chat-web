@@ -53,7 +53,8 @@ class WebSocketService {
               // update tmp message
               this.messages[originalIndex].status = message.status;
               if (message.status === 'success') {
-                this.messages[originalIndex].id = message.actualId
+                this.messages[originalIndex].id = message.actualId;
+                this.messages[originalIndex].actualId = message.actualId;
               }
             }
         } else {
