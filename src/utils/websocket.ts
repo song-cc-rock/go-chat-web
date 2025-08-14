@@ -1,12 +1,14 @@
-import type { ConversationMsgResponse, SendMsgRequest } from '@/models/conversation.ts'
 import { getAuthToken } from '@/utils/auth'
+import { reactive } from 'vue'
+import type { ConversationMsgResponse, SendMsgRequest } from '@/models/conversation.ts'
 
 class WebSocketService {
   private socket: WebSocket | null = null
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 1000 // ms
-  public messages: ConversationMsgResponse[] = []
+  public messages = reactive<ConversationMsgResponse[]>([])
+
   public connected = false
   private authToken: string | null = null
 
@@ -14,7 +16,6 @@ class WebSocketService {
     // Get auth token
     this.authToken = getAuthToken()
     this.connected = false
-    this.messages = []
   }
 
   // Init connection
@@ -42,7 +43,23 @@ class WebSocketService {
     this.socket.onmessage = (event) => {
       try {
         const message: ConversationMsgResponse = JSON.parse(event.data)
-        this.messages.push(message)
+        // handle ack message
+        if (message.type === 'ack') {
+            // find tmp message to update
+            const originalIndex = this.messages.findIndex(
+              msg => msg.id === message.clientTmpId
+            );
+            if (originalIndex !== -1) {
+              // update tmp message
+              this.messages[originalIndex].status = message.status;
+              if (message.status === 'success') {
+                this.messages[originalIndex].id = message.actualId
+              }
+            }
+        } else {
+          // push tmp message
+          this.messages.push(message);
+        }
       } catch (error) {
         console.error('parse ws message error:', error)
       }
@@ -120,5 +137,4 @@ class WebSocketService {
     }
   }
 }
-
 export default WebSocketService

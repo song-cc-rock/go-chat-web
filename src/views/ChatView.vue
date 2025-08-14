@@ -33,17 +33,53 @@
 import { SearchOutlined as SearchIcon, PlusOutlined as PlusIcon, WechatOutlined as WechatIcon} from '@vicons/antd'
 import ChatUserList from '@/components/chat/ChatUserList.vue'
 import ChatContainer from '@/components/ChatContainer.vue'
-import { onMounted, ref } from 'vue'
-import { getConversationList } from '@/api/conversation.ts'
+import { onMounted, ref, watch, inject, type Ref } from 'vue'
+import { getConversationList, clearConversationUnreadCount } from '@/api/conversation.ts'
 import { getAuthUser } from '@/utils/auth.ts'
-import type { ConversationResponse } from '@/models/conversation.ts'
+import type { ConversationResponse, ConversationMsgResponse } from '@/models/conversation.ts'
+import WebSocketService from '@/utils/websocket.ts'
 
 const authUser = getAuthUser()
 const conversations = ref<ConversationResponse[]>()
-const selectedConversation = ref(null)
+const selectedConversation = ref<ConversationResponse>()
+
+// 注入WebSocket服务
+const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
+
+const reloadConversation = async () => {
+  // 重新获取对话列表
+  conversations.value = await getConversationList(authUser.id)
+}
 
 onMounted(async () => {
   conversations.value = await getConversationList(authUser.id)
+  // 添加WebSocket消息监听
+  if (wsService.value) {
+    watch(
+      () => wsService.value?.messages,
+      async (newMessages) => {
+        if (newMessages && newMessages.length > 0) {
+          // 获取最新消息
+          const latestMsg = newMessages[newMessages.length - 1];
+          if (latestMsg.send !== authUser.id) {
+            // 检查是否是当前激活对话的消息
+            if (selectedConversation.value && latestMsg.send === selectedConversation.value.targetUserId && conversations.value) {
+                // 如果消息来源为当前激活对话的目标用户, 则清空对话未读条数
+                const conversationIndex = conversations.value.findIndex(
+                  conv => conv.id === selectedConversation.value?.id
+                );
+                if (conversationIndex !== -1) {
+                  await clearConversationUnreadCount(selectedConversation.value.id);
+                }
+            }
+          }
+          // 只要有新消息就刷新对话列表
+          reloadConversation();
+        }
+      },
+      { deep: true }
+    )
+  }
 })
 </script>
 

@@ -31,6 +31,7 @@ const currentChatUser = ref<ConversationResponse>()
 
 const selectChatUser = (user: ConversationResponse) => {
   currentChatUser.value = user;
+  currentChatUser.value.unreadCount = 0;
   emit('select', currentChatUser.value)
 }
 

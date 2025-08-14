@@ -18,19 +18,34 @@
           :src="msg.avatar"
         />
       </template>
-      <n-thing>
+      <n-thing v-if="msg.send === authUser.id">
+        <div class="status-wrap left">
+          <n-icon v-if="msg.status === 'sent'" size="16" class="status-icon spin">
+            <component :is="LoadingIcon" />
+          </n-icon>
+          <n-button v-else-if="msg.status === 'failed'" text size="tiny" class="status-icon resend-btn" @click="onResend(msg)">
+            <n-icon size="16">
+              <component :is="WarningIcon" />
+            </n-icon>
+          </n-button>
+        </div>
         <div class="chat-box">
           <p v-html="msg.content" />
-          <div v-if="msg.send === authUser.id" class="status-wrap">
-            <n-icon v-if="msg.status === 'sent'" size="16" class="status-icon spin">
-              <component :is="LoadingIcon" />
+        </div>
+      </n-thing>
+      <n-thing v-if="msg.send !== authUser.id">
+        <div class="chat-box">
+          <p v-html="msg.content" />
+        </div>
+        <div class="status-wrap right">
+          <n-icon v-if="msg.status === 'sent'" size="16" class="status-icon spin">
+            <component :is="LoadingIcon" />
+          </n-icon>
+          <n-button v-else-if="msg.status === 'failed'" text size="tiny" class="status-icon resend-btn" @click="onResend(msg)">
+            <n-icon size="16">
+              <component :is="WarningIcon" />
             </n-icon>
-            <n-button v-else-if="msg.status === 'failed'" text size="tiny" class="status-icon resend-btn" @click="onResend(msg)">
-              <n-icon size="16">
-                <component :is="WarningIcon" />
-              </n-icon>
-            </n-button>
-          </div>
+          </n-button>
         </div>
       </n-thing>
     </n-list-item>
@@ -43,7 +58,7 @@ import { getConversationHis } from '@/api/conversation.ts'
 import { onMounted, ref, watch, inject, type Ref } from 'vue'
 import { getAuthUser } from '@/utils/auth.ts'
 import WebSocketService from '@/utils/websocket.ts'
-import { ArrowClockwise24Regular as LoadingIcon, Alert24Regular as WarningIcon } from '@vicons/fluent'
+import { Loading3QuartersOutlined as LoadingIcon, ExclamationCircleOutlined as WarningIcon } from '@vicons/antd'
 
 const props = defineProps<{
   conversation: ConversationResponse | undefined;
@@ -55,19 +70,31 @@ const authUser = getAuthUser()
 const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
 
 onMounted(async () => {
-  // 监听新消息
+  // 监听新消息和消息状态变化
   if (wsService.value) {
     watch(
       () => wsService.value?.messages,
       (newMessages) => {
         if (newMessages && newMessages.length > 0) {
-          const lastMessage = newMessages[newMessages.length - 1]
-          // 检查消息是否属于当前对话
-          if (lastMessage && props.conversation && 
-              (lastMessage.send === props.conversation.targetUserId || 
-               lastMessage.receiver === props.conversation.targetUserId)) {
-            updateConversationMap([lastMessage])
-            scrollToBottom()
+          // 检查是否有消息状态变化或新消息
+          const updatedMessages = newMessages.filter(msg => 
+            msg.send === authUser.id && 
+            (msg.status === 'success' || msg.status === 'failed')
+          );
+
+          if (updatedMessages.length > 0) {
+            // 更新所有状态变化的消息
+            updateConversationMap(updatedMessages);
+            scrollToBottom();
+          } else {
+            // 处理新消息
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage && props.conversation && 
+                (lastMessage.send === props.conversation.targetUserId || 
+                 lastMessage.receiver === props.conversation.targetUserId)) {
+              updateConversationMap([lastMessage]);
+              scrollToBottom();
+            }
           }
         }
       },
@@ -95,24 +122,44 @@ watch(
 const updateConversationMap = (newMessages: ConversationMsgResponse[]) => {
   const currentMap = conversationMap.value
   newMessages.forEach((message) => {
-    // 将秒级时间戳转换为毫秒级再创建Date对象
-    const messageTime = new Date(message.created_at);
-    let added = false
+    // 检查是否是更新现有消息的状态
+    // 查找现有消息，优先匹配id，其次匹配clientTmpId
+    const existingEntry = Array.from(currentMap.entries()).find(([_, messages]) => {
+      return messages.some(m => 
+        m.id === message.id || 
+        (m.clientTmpId && m.clientTmpId === message.clientTmpId) || 
+        (m.actualId && m.actualId === message.actualId)
+      );
+    });
 
-    // 尝试添加到现有组
-    currentMap.forEach((messages, key) => {
-      const timeDiff = messageTime.getTime() - key.getTime();
-      const fiveMinutes = 5 * 60 * 1000;
-
-      if (timeDiff <= fiveMinutes) {
-        messages.push(message);
-        added = true;
+    if (existingEntry) {
+      // 找到现有消息，更新其状态
+      const [key, messages] = existingEntry;
+      const index = messages.findIndex(m => m.id === message.id);
+      if (index !== -1) {
+        messages[index] = { ...messages[index], ...message };
       }
-    })
+    } else {
+      // 新消息，按时间分组添加
+      // 将秒级时间戳转换为毫秒级再创建Date对象
+      const messageTime = new Date(message.created_at);
+      let added = false
 
-    // 如果没有添加到现有组，创建新组
-    if (!added) {
-      currentMap.set(messageTime, [message]);
+      // 尝试添加到现有组
+      currentMap.forEach((messages, key) => {
+        const timeDiff = messageTime.getTime() - key.getTime();
+        const fiveMinutes = 5 * 60 * 1000;
+
+        if (timeDiff <= fiveMinutes) {
+          messages.push(message);
+          added = true;
+        }
+      })
+
+      // 如果没有添加到现有组，创建新组
+      if (!added) {
+        currentMap.set(messageTime, [message]);
+      }
     }
   })
 
@@ -204,18 +251,21 @@ const getLastConversationTime = (time: number) => {
 }
 
 const onResend = (msg: ConversationMsgResponse) => {
-  if (!props.conversation || !wsService.value) return
+  if (!props.conversation || !wsService.value || !wsService.value.messages || !wsService.value.messages) return
   // reuse the same content to resend; create a new local message object
+  const clientTmpId = `temp-${Date.now()}`
   const newMessage: ConversationMsgResponse = {
-    id: `temp-${Date.now()}`,
+    id: clientTmpId,
     send: authUser.id,
     receiver: props.conversation.targetUserId,
     content: msg.content,
     created_at: Date.now(),
     avatar: authUser.avatar || '',
-    status: 'sent'
+    status: 'sent',
+    actualId: '',
+    clientTmpId: clientTmpId
   }
-  // push immediately
+  // local push
   wsService.value.messages.push(newMessage)
   // send
   wsService.value.sendMessage({
@@ -244,6 +294,54 @@ const onResend = (msg: ConversationMsgResponse) => {
   background: whitesmoke;
   border-radius: 10px;
   min-height: 20.8px;
+}
+
+.status-wrap {
+  display: inline;
+  padding: 5px;
+}
+
+.status-wrap.right {
+  position: absolute;
+}
+
+.status-wrap.left .status-icon.spin.n-icon{
+  margin-right: 3px!important;
+}
+
+.status-wrap.right .status-icon.spin.n-icon{
+  margin-left: 3px!important;
+}
+
+.status-icon {
+    font-size: 14px!important;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+  }
+
+  .status-icon:hover {
+  opacity: 1;
+}
+
+.resend-btn {
+  padding: 0;
+  min-width: auto;
+  height: auto;
+  opacity: 0.7;
+}
+
+.resend-btn:hover {
+  opacity: 1;
+  background-color: transparent;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
 }
 
 .chat-box:before {
@@ -295,7 +393,7 @@ const onResend = (msg: ConversationMsgResponse) => {
 
 .box-right .chat-box:before {
   border-left: 10px solid #07C16F;
-  left: 98%;
+  left: 95%;
   margin-left: 0;
 }
 
@@ -320,12 +418,6 @@ const onResend = (msg: ConversationMsgResponse) => {
   text-align: center;
   margin-bottom: 10px;
 }  
-
-.status-wrap {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 6px;
-}
 
 .status-icon {
   vertical-align: middle;

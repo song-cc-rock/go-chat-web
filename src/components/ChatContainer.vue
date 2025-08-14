@@ -69,25 +69,30 @@ const sendMessage = () => {
   }
 
   // Create message object
+  const clientTmpId = `temp-${Date.now()}`
   const newMessage = {
-    id: `temp-${Date.now()}`,
+    id: clientTmpId,
     send: authUser.id,
     receiver: props.conversation.targetUserId,
     content: messageContent.value,
     created_at: Date.now(),
     avatar: authUser.avatar || '',
-    status: 'sent'
+    status: 'sent',
+    actualId: '',
+    clientTmpId: clientTmpId
   }
 
-  // Send message to server
+  // send
   wsService.value.sendMessage({
     ...newMessage,
     conversation_id: props.conversation.id,
   })
 
-  // Add message to local messages array immediately
-  if (wsService.value && wsService.value.messages) {
+  // local push
+  if (wsService.value) {
     wsService.value.messages.push(newMessage)
+  } else {
+    console.error('Failed to push message: wsService is undefined')
   }
 
   messageContent.value = ''

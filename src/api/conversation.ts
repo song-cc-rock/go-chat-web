@@ -8,3 +8,7 @@ export function getConversationList(id: string): Promise<ConversationResponse[]>
 export function getConversationHis(id: string): Promise<ConversationMsgResponse[]> {
   return request.get('/conversation/his?id=' + id)
 }
+
+export function clearConversationUnreadCount(id: string): Promise<Number> {
+  return request.get('/conversation/clear?id=' + id)
+}

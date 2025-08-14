@@ -17,6 +17,9 @@ export interface ConversationMsgResponse {
   created_at: number;
   avatar: string;
   status: string;
+  type?: string;
+  clientTmpId?: string;
+  actualId: string;
 }
 
 export interface SendMsgRequest {
