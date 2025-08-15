@@ -11,7 +11,7 @@
         />
       </template>
       <n-thing :title="chatUser.nickName" :title-extra="formatLastTime(chatUser.lastMessageAt)">
-        <span class="last-content">{{sentByTarget(chatUser) ? chatUser.nickName + ": " + chatUser.lastMessage : chatUser.lastMessage}}</span>
+        <span class="last-content" v-html="parseMsg(chatUser)"></span>
       </n-thing>
       <n-badge :value="chatUser.unreadCount" :max="99" class="un-read-badge" />
     </n-list-item>
@@ -30,9 +30,16 @@ const emit = defineEmits(['select'])
 const currentChatUser = ref<ConversationResponse>()
 
 const selectChatUser = (user: ConversationResponse) => {
-  currentChatUser.value = user;
-  currentChatUser.value.unreadCount = 0;
-  emit('select', currentChatUser.value)
+  // 如果点击的是当前已激活的对话，则清空选择
+  if (currentChatUser.value && user.id === currentChatUser.value.id) {
+    currentChatUser.value = undefined;
+    emit('select', null);
+  } else {
+    // 正常选择对话
+    currentChatUser.value = user;
+    currentChatUser.value.unreadCount = 0;
+    emit('select', currentChatUser.value);
+  }
 }
 
 const formatLastTime = (timestamp: number) => {
@@ -45,6 +52,11 @@ const formatLastTime = (timestamp: number) => {
     return formatTimestamp(timestamp, "HH:mm")
   }
 }
+
+const parseMsg = (chatUser: ConversationResponse) => {
+  return sentByTarget(chatUser) ? chatUser.nickName + ": " + chatUser.lastMessage : chatUser.lastMessage
+}
+
 
 const sentByTarget = (user: ConversationResponse) => {
   return user.lastSentUser === user.targetUserId

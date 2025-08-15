@@ -1,6 +1,6 @@
 <template>
   <div class="chat-container">
-    <n-list v-for="[key, value] in Array.from(conversationMap.entries())" :key="key.getTime()" class="group-chat" :show-divider="false">
+  <n-list v-for="[key, value] in Array.from(conversationMap.entries())" :key="key.getTime()" class="group-chat" :show-divider="false">
     <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(key.getTime()) }}</n-tag></div>
     <n-list-item v-for="msg in value" :key="msg.id" :class="msg.send === authUser.id ? 'box-right' : 'box-left'">
       <template #suffix v-if="msg.send === authUser.id">
@@ -57,11 +57,12 @@
     v-if="showScrollToBottomBtn"
     class="scroll-to-bottom-btn"
     size="small"
-    round
+    :bordered="false"
+    circle
     @click="scrollToBottom"
-    :disabled="scrollToBottomDisabled"
+    :style="{ opacity: scrollToBottomBtnOpacity }"
   >
-    <n-icon size="16"><component :is="ScrollDownIcon" /></n-icon>
+    <n-icon size="21"><component :is="BackBottomIcon" /></n-icon>
   </n-button>
   </div>
 </template>
@@ -72,7 +73,7 @@ import { getConversationHis } from '@/api/conversation.ts'
 import { onMounted, ref, watch, inject, type Ref, onUnmounted } from 'vue'
 import { getAuthUser } from '@/utils/auth.ts'
 import WebSocketService from '@/utils/websocket.ts'
-import { Loading3QuartersOutlined as LoadingIcon, ExclamationCircleOutlined as WarningIcon, ArrowDownOutlined as ScrollDownIcon } from '@vicons/antd'
+import { Loading3QuartersOutlined as LoadingIcon, ExclamationCircleOutlined as WarningIcon, VerticalAlignBottomOutlined as BackBottomIcon } from '@vicons/antd'
 import eventBus from '@/utils/eventBus.ts'
 
 const props = defineProps<{
@@ -99,10 +100,7 @@ onMounted(async () => {
 
           // 处理所有新消息
           const relevantMessages = newMessages.filter(msg => 
-            props.conversation && (
-              msg.send === props.conversation.targetUserId || 
-              msg.receiver === props.conversation.targetUserId
-            )
+            props.conversation && (msg.send === props.conversation.targetUserId || msg.receiver === props.conversation.targetUserId)
           );
 
           // 先处理状态更新
@@ -115,7 +113,7 @@ onMounted(async () => {
             updateConversationMap(relevantMessages);
           }
 
-          // 如果有任何消息被处理，滚动到底部
+          // 有新消息就滚动到底部
           if (updatedMessages.length > 0 || relevantMessages.length > 0) {
             scrollToBottom();
           }
@@ -134,6 +132,7 @@ watch(
       conversationMap.value = new Map()
       return
     }
+
     const msgList = await getConversationHis(newId)
     eventBus.emit('refreshUnreadCount')
     conversationMap.value = getConversationMap(msgList)
@@ -193,18 +192,31 @@ const updateConversationMap = (newMessages: ConversationMsgResponse[]) => {
 }
 
 // 滚动到底部
-// 控制滚动到底部按钮的显示
+// 控制滚动到底部按钮的显示和透明度
 const showScrollToBottomBtn = ref(false)
-const scrollToBottomDisabled = ref(false)
+const scrollToBottomBtnOpacity = ref(1)
+const isScrollingToBottom = ref(false)
 
 // 监听滚动事件
 onMounted(() => {
   const scrollContainer = document.querySelector('.n-scrollbar-container')
   if (scrollContainer) {
     const handleScroll = () => {
-      // 检查是否滚动到底部附近（100px内）
-      const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100
-      showScrollToBottomBtn.value = !isNearBottom
+  // 检查是否滚动到底部附近（100px内）
+  const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100
+  if (isNearBottom && showScrollToBottomBtn.value && !isScrollingToBottom.value) {
+    // 接近底部时，按钮淡出
+    scrollToBottomBtnOpacity.value = 0
+    setTimeout(() => {
+      showScrollToBottomBtn.value = false
+      // 重置透明度，为下次显示做准备
+      scrollToBottomBtnOpacity.value = 1
+    }, 300)
+  } else if (!isNearBottom && !showScrollToBottomBtn.value && !isScrollingToBottom.value) {
+    // 远离底部时，显示按钮
+    showScrollToBottomBtn.value = true
+    scrollToBottomBtnOpacity.value = 1
+  }
     }
 
     // 初始检查
@@ -220,21 +232,32 @@ onMounted(() => {
   }
 })
 
+import { nextTick } from 'vue'
+
 const scrollToBottom = () => {
-  // 防止重复点击
-  scrollToBottomDisabled.value = true
-  setTimeout(() => {
+  // 设置滚动中标志
+  isScrollingToBottom.value = true
+  
+  // 使用nextTick确保DOM更新后再滚动
+  nextTick(() => {
     const scrollContainer = document.querySelector('.n-scrollbar-container')
     if (scrollContainer) {
-      scrollContainer.scrollTop = scrollContainer.scrollHeight
-      // 滚动后隐藏按钮
+      // 立即隐藏按钮
       showScrollToBottomBtn.value = false
+      
+      // 使用平滑滚动
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollHeight,
+        behavior: 'smooth'
+      })
     }
-    // 恢复按钮状态
-    setTimeout(() => {
-      scrollToBottomDisabled.value = false
-    }, 500)
-  }, 100)
+  })
+  
+  // 滚动完成后重置标志
+  setTimeout(() => {
+    isScrollingToBottom.value = false
+    scrollToBottomBtnOpacity.value = 1
+  }, 800)
 }
 
 const getConversationMap = (res: ConversationMsgResponse[]) => {
@@ -345,7 +368,7 @@ const onResend = (msg: ConversationMsgResponse) => {
   position: relative;
   display: inline-block;
   margin: 0 0 0.5em 0;
-  padding: 7px 10px;
+  padding: 10px 12px;
   min-width: 20px;
   max-width: 70%;
   color: black;
@@ -353,7 +376,7 @@ const onResend = (msg: ConversationMsgResponse) => {
   font-weight: 400;
   background: whitesmoke;
   border-radius: 10px;
-  min-height: 20.8px;
+  line-height: 1.0;
 }
 
 .status-wrap {
@@ -414,6 +437,13 @@ const onResend = (msg: ConversationMsgResponse) => {
 .chat-box p {
   margin: 0;
   padding: 0;
+}
+
+/* emoji样式 */
+:deep(.chat-box p .emoji-in-text) {
+  font-size: 18px !important;
+  vertical-align: middle !important;
+  display: inline-block !important;
 }
 
 .group-chat .n-list-item {
@@ -503,10 +533,32 @@ const onResend = (msg: ConversationMsgResponse) => {
 .scroll-to-bottom-btn {
     position: absolute;
     bottom: 5px;
-    left: 300px;
-    text-align: center;
+    right: 50%;
     z-index: 9999;
-    border: none;
-    background-color: transparent;
+    border: none !important;
+    outline: none;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.scroll-to-bottom-btn:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 1);
+    transform: translateY(-2px);
 }
 </style>

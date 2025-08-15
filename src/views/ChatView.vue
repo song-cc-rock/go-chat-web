@@ -33,7 +33,7 @@
 import { SearchOutlined as SearchIcon, PlusOutlined as PlusIcon, WechatOutlined as WechatIcon} from '@vicons/antd'
 import ChatUserList from '@/components/chat/ChatUserList.vue'
 import ChatContainer from '@/components/ChatContainer.vue'
-import { onMounted, ref, watch, inject, type Ref } from 'vue'
+import { onMounted, ref, watch, inject, type Ref, onUnmounted } from 'vue'
 import { getConversationList, clearConversationUnreadCount } from '@/api/conversation.ts'
 import { getAuthUser } from '@/utils/auth.ts'
 import type { ConversationResponse, ConversationMsgResponse } from '@/models/conversation.ts'
@@ -55,34 +55,49 @@ const reloadConversation = async () => {
 }
 
 onMounted(async () => {
-  conversations.value = await getConversationList(authUser.id)
-  // 添加WebSocket消息监听
-  if (wsService.value) {
-    watch(
-      () => wsService.value?.messages,
-      async (newMessages) => {
-        if (newMessages && newMessages.length > 0) {
-          // 获取最新消息
-          const latestMsg = newMessages[newMessages.length - 1];
-          if (latestMsg.send !== authUser.id) {
+  // 初始化加载对话列表
+  await reloadConversation();
+  // 监听消息发送事件，刷新对话列表
+  eventBus.on('messageSent', reloadConversation);
+
+  // 监听消息的变化
+  watch(
+    () => wsService.value?.messages,
+    async (newMessages) => {
+      console.log('newMessages updated:', newMessages);
+      if (newMessages && newMessages.length > 0) {
+        // 遍历所有新消息而不仅仅是最后一条
+        newMessages.forEach(msg => {
+          if (msg.send !== authUser.id && msg.type !== 'ack') {
+            console.log('Received new message from:', msg.send);
             // 检查是否是当前激活对话的消息
-            if (selectedConversation.value && latestMsg.send === selectedConversation.value.targetUserId && conversations.value) {
-                // 如果消息来源为当前激活对话的目标用户, 则清空对话未读条数
-                const conversationIndex = conversations.value.findIndex(
-                  conv => conv.id === selectedConversation.value?.id
-                );
-                if (conversationIndex !== -1) {
-                  await clearConversationUnreadCount(selectedConversation.value.id);
-                }
+            if (selectedConversation.value && msg.send === selectedConversation.value.targetUserId) {
+              // 清空当前对话未读条数
+              clearConversationUnreadCount(selectedConversation.value.id);
             }
+            // 刷新对话列表
+            reloadConversation();
           }
-          // 只要有新消息就刷新对话列表
-          reloadConversation();
-        }
-      },
-      { deep: true }
-    )
+        });
+      }
+    },
+    { deep: true }
+  );
+})
+
+// 监听对话切换，进入对话时刷新列表
+watch(
+  () => selectedConversation.value?.id,
+  (newId) => {
+    if (newId) {
+      reloadConversation();
+    }
   }
+)
+
+onUnmounted(() => {
+  // 移除消息发送事件监听器
+  eventBus.off('messageSent', reloadConversation)
 })
 </script>
 

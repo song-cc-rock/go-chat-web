@@ -16,21 +16,42 @@
   <div class="footer">
     <div class="chat-btn">
       <div class="left-btn">
-        <n-button text>
-          <n-icon size="25" :component="EmojiIcon" />
-        </n-button>
-        <n-button text>
+        <n-popover
+          content-class="emoji-popover"
+          placement="top"
+          trigger="click"
+        >
+          <template #trigger>
+            <n-button text title="表情">
+              <n-icon size="25" :component="EmojiIcon" />
+            </n-button>
+          </template>
+          <div class="emoji-picker">
+            <n-scrollbar style="max-height: 300px">
+              <div class="emoji-category">
+                <h4>常用表情</h4>
+                <div class="emoji-grid">
+                  <span v-for="emoji in emojiCategories.common" :key="emoji" class="emoji-item" @click="selectEmoji(emoji)">{{ emoji }}</span>
+                </div>
+              </div>
+              <div class="emoji-category">
+                <h4>所有表情</h4>
+                <div class="emoji-grid">
+                  <span v-for="emoji in emojiCategories.face" :key="emoji" class="emoji-item" @click="selectEmoji(emoji)">{{ emoji }}</span>
+                </div>
+              </div>
+            </n-scrollbar>
+          </div>
+        </n-popover>
+        <n-button text title="上传文件">
           <n-icon size="25" :component="FileIcon" />
-        </n-button>
-        <n-button text>
-          <n-icon size="25" :component="ChatHisIcon" />
         </n-button>
       </div>
       <div class="right-btn">
-        <n-button text>
+        <n-button text title="语音">
           <n-icon size="25" :component="CallPhoneIcon" />
         </n-button>
-        <n-button text>
+        <n-button text title="电话">
           <n-icon size="25" :component="CallVideoIcon" />
         </n-button>
       </div>
@@ -60,13 +81,104 @@ const props = defineProps<{
 }>();
 const authUser = getAuthUser()
 const messageContent = ref('')
+const showEmojiPicker = ref(false)
 // inject ws service
 const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
+
+// 导入表情字典
+import emojiDict from '@/utils/emojiDict.ts'
+// 导入事件总线
+import eventBus from '@/utils/eventBus.ts'
+
+// 表情类别字典表
+const emojiCategories = {
+  // 初始化常用表情，会从localStorage加载
+  common: [] as string[],
+  face: emojiDict.face,
+}
+
+// 从localStorage加载常用表情
+const loadCommonEmojis = () => {
+  try {
+    const saved = localStorage.getItem('commonEmojis')
+    if (saved) {
+      // 解析保存的表情使用记录 {emoji: count}
+      const emojiCounts = JSON.parse(saved)
+      // 按使用次数排序并取前20个
+      const sortedEmojis = Object.entries(emojiCounts)
+        .sort((a, b) => Number(b[1]) - Number(a[1]))
+        .map(item => item[0])
+        .slice(0, 5)
+      emojiCategories.common = sortedEmojis
+    } else {
+      // 默认常用表情
+      emojiCategories.common = emojiDict.commonDefault
+    }
+  } catch (error) {
+    console.error('Failed to load common emojis:', error)
+    // 出错时使用默认值
+    emojiCategories.common = emojiDict.commonDefault
+  }
+}
+
+// 更新常用表情使用频率并保存到localStorage
+const updateCommonEmojis = (emoji: string) => {
+  try {
+    let emojiCounts: Record<string, number> = {}
+    const saved = localStorage.getItem('commonEmojis')
+    if (saved) {
+      emojiCounts = JSON.parse(saved)
+    }
+
+    // 增加使用次数
+    emojiCounts[emoji] = (emojiCounts[emoji] || 0) + 1
+
+    // 保存到localStorage
+    localStorage.setItem('commonEmojis', JSON.stringify(emojiCounts))
+
+    // 更新常用表情列表
+    const sortedEmojis = Object.entries(emojiCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(item => item[0])
+      .slice(0, 20)
+    emojiCategories.common = sortedEmojis
+  } catch (error) {
+    console.error('Failed to update common emojis:', error)
+  }
+}
+
+// 初始化加载常用表情
+loadCommonEmojis()
+
+// 切换表情选择器显示/隐藏
+const toggleEmojiPicker = () => {
+  showEmojiPicker.value = !showEmojiPicker.value
+}
+
+// 选择表情
+const selectEmoji = (emoji: string) => {
+  // 直接添加emoji符号到输入框
+  messageContent.value += emoji
+  // 更新常用表情使用频率
+  updateCommonEmojis(emoji)
+}
+
+// 点击其他地方关闭表情选择器
+document.addEventListener('click', (e) => {
+  const emojiPicker = document.querySelector('.emoji-picker')
+  const emojiButton = document.querySelector('.left-btn n-button:nth-child(1)')
+  if (emojiPicker && emojiButton && !emojiPicker.contains(e.target as Node) && !emojiButton.contains(e.target as Node)) {
+    showEmojiPicker.value = false
+  }
+})
 
 const sendMessage = () => {
   if (!messageContent.value.trim() || !props.conversation?.id || !wsService.value) {
     return
   }
+
+  // 为消息中的emoji添加span标签和样式类
+  const contentWithStyledEmojis = messageContent.value.replace(/([\uD800-\uDBFF][\uDC00-\uDFFF])/g, '<span class=\"emoji-in-text\">$1</span>')
 
   // Create message object
   const clientTmpId = `temp-${Date.now()}`
@@ -74,7 +186,7 @@ const sendMessage = () => {
     id: clientTmpId,
     send: authUser.id,
     receiver: props.conversation.targetUserId,
-    content: messageContent.value,
+    content: contentWithStyledEmojis,
     created_at: Date.now(),
     avatar: authUser.avatar || '',
     status: 'sent',
@@ -96,6 +208,8 @@ const sendMessage = () => {
   }
 
   messageContent.value = ''
+  // 触发消息发送事件，通知外部组件刷新对话列表
+  eventBus.emit('messageSent')
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
@@ -183,6 +297,58 @@ const handleKeyDown = (event: KeyboardEvent) => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 8px;
   padding: 8px;
+  position: relative;
+}
+
+.emoji-popover .emoji-picker {
+  position: relative !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: 400px;
+  background-color: white !important;
+  padding: 10px!important;
+  z-index: 1000 !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* 隐藏滚动条 */
+.emoji-popover .n-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.emoji-popover .n-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+
+.emoji-category {
+  margin-bottom: 10px;
+}
+
+.emoji-category h4 {
+    font-size: 13px;
+    color: rgb(51, 54, 57);
+    margin-bottom: 10px;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+  gap: 5px;
+}
+
+.emoji-item {
+  font-size: 20px;
+  text-align: center;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.2s;
+}
+
+.emoji-item:hover {
+  background-color: #f0f0f0;
 }
 
 .left-btn button:hover {
@@ -218,6 +384,14 @@ const handleKeyDown = (event: KeyboardEvent) => {
   --n-border-focus: none!important;
   --n-box-shadow-focus: none!important;
   padding-left: 5px;
+  font-size: 14px !important;
+}
+
+/* 为聊天输入框中的emoji添加样式 */
+.chat-area ::v-deep span.emoji-in-text,
+.chat-area emoji {
+  font-size: 18px !important;
+  vertical-align: middle;
 }
 
 .send-btn {
@@ -240,5 +414,30 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 :deep(.n-input.n-input--textarea.n-input--resizable .n-input-wrapper) {
   resize: none;
+}
+
+.btn-tips {
+  height: 30px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
+
+<style>
+.n-popover.n-popover-shared.n-popover-shared--show-arrow {
+    border-radius: 10px;
+}
+
+.n-scrollbar-rail__scrollbar {
+    display: none !important;
+}
+
+.emoji-in-text,
+.emoji-item {
+  font-size: 20px !important;
+  vertical-align: middle;
+  line-height: 0.9;
 }
 </style>
