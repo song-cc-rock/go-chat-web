@@ -64,7 +64,6 @@ onMounted(async () => {
   watch(
     () => wsService.value?.messages,
     async (newMessages) => {
-      console.log('newMessages updated:', newMessages);
       if (newMessages && newMessages.length > 0) {
         // 遍历所有新消息而不仅仅是最后一条
         newMessages.forEach(msg => {

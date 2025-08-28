@@ -20,6 +20,12 @@ export interface ConversationMsgResponse {
   type?: string;
   clientTmpId?: string;
   actualId: string;
+  fileInfo: {
+    name: string;
+    size: number;
+    type: string;
+    url: string;
+  }
 }
 
 export interface SendMsgRequest {

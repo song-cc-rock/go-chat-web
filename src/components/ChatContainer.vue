@@ -43,7 +43,13 @@
             </n-scrollbar>
           </div>
         </n-popover>
-        <n-button text title="上传文件">
+        <input
+          ref="fileInput"
+          type="file"
+          style="display: none"
+          @change="handleFileInputChange"
+        />
+        <n-button text @click="triggerFileInput" title="上传文件">
           <n-icon size="25" :component="FileIcon" />
         </n-button>
       </div>
@@ -82,6 +88,7 @@ const props = defineProps<{
 const authUser = getAuthUser()
 const messageContent = ref('')
 const showEmojiPicker = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 // inject ws service
 const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
 
@@ -191,7 +198,13 @@ const sendMessage = () => {
     avatar: authUser.avatar || '',
     status: 'sent',
     actualId: '',
-    clientTmpId: clientTmpId
+    clientTmpId: clientTmpId,
+    fileInfo: {
+      name: '',
+      size: 0,
+      type: '',
+      url: ''
+    }
   }
 
   // send
@@ -217,6 +230,103 @@ const handleKeyDown = (event: KeyboardEvent) => {
     event.preventDefault();
     sendMessage();
   }
+};
+
+// 触发文件选择
+const triggerFileInput = () => {
+  fileInput.value?.click();
+};
+
+// 处理文件输入变化
+const handleFileInputChange = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files[0]) {
+    fileUpload(input.files[0]);
+    // 重置input值，允许重复选择同一文件
+    input.value = '';
+  }
+};
+
+const fileUpload = (file: File) => {
+  if (!props.conversation?.id || !wsService.value) {
+    console.error('Cannot upload file: No conversation selected or wsService is unavailable');
+    return;
+  }
+
+  // 创建临时ID和文件消息对象
+  const clientTmpId = `temp-${Date.now()}`;
+  
+  // 初始化文件消息
+  const fileMessage = {
+    id: clientTmpId,
+    send: authUser.id,
+    receiver: props.conversation.targetUserId,
+    content: `[文件] ${file.name} (${formatFileSize(file.size)})`,
+    created_at: Date.now(),
+    avatar: authUser.avatar || '',
+    status: 'sending',
+    actualId: '',
+    clientTmpId: clientTmpId,
+    fileInfo: {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: ''
+    },
+    type: 'file'
+  };
+
+  // 本地添加文件消息，确保立即显示在聊天界面
+  if (wsService.value) {
+    wsService.value.messages.push(fileMessage);
+    // 触发消息更新事件，通知界面刷新
+    eventBus.emit('messageSent');
+  }
+
+  // 模拟文件上传过程
+  // 在实际项目中，这里应该调用真实的文件上传API
+  // const simulateFileUpload = () => {
+  //   // 模拟上传延迟
+  //   setTimeout(() => {
+  //     // 上传完成，更新消息状态
+  //     const messageIndex = wsService.value?.messages.findIndex(msg => msg.clientTmpId === clientTmpId);
+  //     if (messageIndex !== undefined && messageIndex !== -1 && wsService.value) {
+  //       // 更新消息状态为已发送
+  //       wsService.value.messages[messageIndex].status = 'sent';
+  //       // 模拟设置文件URL
+  //       wsService.value.messages[messageIndex].fileInfo.url = `https://example.com/uploads/${file.name}`;
+  //       // 触发消息更新事件
+  //       eventBus.emit('messageUpdated', wsService.value.messages[messageIndex]);
+  //     }
+
+  //     // 发送文件消息到WebSocket服务
+  //     wsService.value?.sendMessage({
+  //       ...fileMessage,
+  //       conversation_id: props.conversation.id,
+  //       status: 'sent',
+  //       fileInfo: {
+  //         ...fileMessage.fileInfo,
+  //         url: `https://example.com/uploads/${file.name}`
+  //       }
+  //     });
+
+  //     console.log('File upload completed:', file.name);
+  //   }, 1000); // 模拟1秒上传时间
+  // };
+
+  // 开始模拟上传
+  // simulateFileUpload();
+
+  console.log('File upload initiated:', file.name);
+};
+
+// 格式化文件大小
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 </script>
 
@@ -292,12 +402,19 @@ const handleKeyDown = (event: KeyboardEvent) => {
   text-align: left;
 }
 
-.left-btn button {
+.left-btn button,
+.left-btn .n-button {
   margin-right: 20px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 8px;
   padding: 8px;
   position: relative;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .emoji-popover .emoji-picker {

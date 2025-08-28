@@ -30,13 +30,45 @@
             </n-icon>
           </n-button>
         </div>
-        <div class="chat-box">
+        <!-- 文本消息 -->
+        <div v-if="msg.type !== 'file'" class="chat-box">
           <p v-html="msg.content" />
+        </div>
+        <!-- 文件消息 -->
+        <div v-else class="chat-box file-message">
+          <div class="file-info">
+            <n-icon size="20" class="file-icon">
+              <component :is="getFileIcon(msg.fileInfo?.type || '')" />
+            </n-icon>
+            <div class="file-details">
+              <div class="file-name">{{ msg.fileInfo?.name }}</div>
+              <div class="file-size">{{ formatFileSize(msg.fileInfo?.size || 0) }}</div>
+            </div>
+            <n-button text size="tiny" class="file-download-btn" @click="downloadFile(msg)">
+              <n-icon size="16"><component :is="DownloadIcon" /></n-icon>
+            </n-button>
+          </div>
         </div>
       </n-thing>
       <n-thing v-if="msg.send !== authUser.id">
-        <div class="chat-box">
+        <!-- 文本消息 -->
+        <div v-if="msg.type !== 'file'" class="chat-box">
           <p v-html="msg.content" />
+        </div>
+        <!-- 文件消息 -->
+        <div v-else class="chat-box file-message">
+          <div class="file-info">
+            <n-icon size="20" class="file-icon">
+              <component :is="getFileIcon(msg.fileInfo?.type || '')" />
+            </n-icon>
+            <div class="file-details">
+              <div class="file-name">{{ msg.fileInfo?.name }}</div>
+              <div class="file-size">{{ formatFileSize(msg.fileInfo?.size || 0) }}</div>
+            </div>
+            <n-button text size="tiny" class="file-download-btn" @click="downloadFile(msg)">
+              <n-icon size="16"><component :is="DownloadIcon" /></n-icon>
+            </n-button>
+          </div>
         </div>
         <div class="status-wrap right">
           <n-icon v-if="msg.status === 'sent'" size="16" class="status-icon spin">
@@ -73,7 +105,8 @@ import { getConversationHis } from '@/api/conversation.ts'
 import { onMounted, ref, watch, inject, type Ref, onUnmounted } from 'vue'
 import { getAuthUser } from '@/utils/auth.ts'
 import WebSocketService from '@/utils/websocket.ts'
-import { Loading3QuartersOutlined as LoadingIcon, ExclamationCircleOutlined as WarningIcon, VerticalAlignBottomOutlined as BackBottomIcon } from '@vicons/antd'
+import { Loading3QuartersOutlined as LoadingIcon, ExclamationCircleOutlined as WarningIcon, VerticalAlignBottomOutlined as BackBottomIcon, 
+  FileOutlined, FileTextOutlined, FileImageOutlined, VideoCameraOutlined, AudioOutlined, DownloadOutlined as DownloadIcon } from '@vicons/antd'
 import eventBus from '@/utils/eventBus.ts'
 
 const props = defineProps<{
@@ -333,6 +366,28 @@ const getLastConversationTime = (time: number) => {
   }
 }
 
+// 获取文件图标
+const getFileIcon = (fileType: string) => {
+  if (fileType.startsWith('image/')) return FileImageOutlined
+  if (fileType.startsWith('video/')) return VideoCameraOutlined
+  if (fileType.startsWith('audio/')) return AudioOutlined
+  if (fileType.includes('text/') || fileType.endsWith('pdf')) return FileTextOutlined
+  return FileOutlined
+}
+
+// 格式化文件大小
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// 下载文件
+const downloadFile = (msg: ConversationMsgResponse) => {
+}
+
 const onResend = (msg: ConversationMsgResponse) => {
   if (!props.conversation || !wsService.value || !wsService.value.messages || !wsService.value.messages) return
   // reuse the same content to resend; create a new local message object
@@ -346,7 +401,14 @@ const onResend = (msg: ConversationMsgResponse) => {
     avatar: authUser.avatar || '',
     status: 'sent',
     actualId: '',
-    clientTmpId: clientTmpId
+    clientTmpId: clientTmpId,
+    // 保留文件相关属性
+    fileInfo: {
+      name: msg.fileInfo.name,
+      size: msg.fileInfo.size,
+      type: msg.fileInfo.type,
+      url: msg.fileInfo.url,
+    }
   }
   // local push
   wsService.value.messages.push(newMessage)
@@ -394,6 +456,60 @@ const onResend = (msg: ConversationMsgResponse) => {
 
 .status-wrap.right .status-icon.spin.n-icon{
   margin-left: 3px!important;
+}
+
+/* 文件消息样式 */
+.file-message {
+  max-width: 300px;
+  min-width: 200px;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.file-icon {
+  margin-right: 10px;
+  color: #1890ff;
+}
+
+.file-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 2px;
+}
+
+.file-size {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.file-download-btn {
+  margin-left: 5px;
+  padding: 0;
+  min-width: auto;
+}
+
+.box-left .file-message:hover {
+  background-color: #dcdcdc;
+}
+
+.box-right .file-message {
+  background-color: #07C16F;
+}
+
+.box-right .file-message:hover {
+  background-color: #18a058;
 }
 
 .status-icon {
