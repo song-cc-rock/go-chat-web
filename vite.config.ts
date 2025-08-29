@@ -23,7 +23,8 @@ export default defineConfig({
             'useLoadingBar'
           ]
         }
-      ]
+      ],
+      dts: true // 生成类型声明文件
     }),
     Components({
       resolvers: [NaiveUiResolver()]

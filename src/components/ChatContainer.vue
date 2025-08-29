@@ -79,8 +79,8 @@ import { MoreHorizontal24Regular as MoreIcon, EmojiSparkle24Regular as EmojiIcon
 import ChatConversation from '@/components/chat/ChatConversation.vue'
 import type { ConversationResponse } from '@/models/conversation.ts'
 import { ref, inject, type Ref } from 'vue'
-import WebSocketService from '@/utils/websocket.ts'
-import { getAuthUser } from '@/utils/auth.ts'
+import WebSocketService from '@/utils/websocket'
+import { getAuthUser } from '@/utils/auth'
 
 const props = defineProps<{
   conversation: ConversationResponse | undefined;
@@ -93,9 +93,9 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
 
 // 导入表情字典
-import emojiDict from '@/utils/emojiDict.ts'
+import emojiDict from '@/utils/emojiDict'
 // 导入事件总线
-import eventBus from '@/utils/eventBus.ts'
+import eventBus from '@/utils/eventBus'
 
 // 表情类别字典表
 const emojiCategories = {

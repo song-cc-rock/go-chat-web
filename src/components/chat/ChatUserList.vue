@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import type { ConversationResponse } from '@/models/conversation.ts'
-import { formatTimestamp } from '@/utils/date.ts'
+import { formatTimestamp } from '@/utils/date'
 const props = defineProps<{
   chatUserList: ConversationResponse[] | undefined;
 }>();

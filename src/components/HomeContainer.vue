@@ -55,12 +55,12 @@ import { WechatOutlined as ChatIcon, UsergroupAddOutlined as GroupIcon, Poweroff
 import { NIcon, createDiscreteApi } from 'naive-ui'
 import { h, ref } from 'vue'
 import router from "@/router/index.js"
-import { clearAuthUser, getAuthUser } from '@/utils/auth.ts'
-import { getUnreadCount } from '@/api/user.ts'
+import { clearAuthUser, getAuthUser } from '@/utils/auth'
+import { getUnreadCount } from '@/api/user'
 import UserTipContainer from '@/components/UserTipContainer.vue'
-import WebSocketService from '@/utils/websocket.ts'
+import WebSocketService from '@/utils/websocket'
 import { provide } from 'vue'
-import eventBus from '@/utils/eventBus.ts'
+import eventBus from '@/utils/eventBus'
 
 const wsService = ref<WebSocketService | null>(null)
 // provide ws service early

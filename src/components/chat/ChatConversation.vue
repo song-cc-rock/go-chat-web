@@ -30,46 +30,10 @@
             </n-icon>
           </n-button>
         </div>
-        <!-- 文本消息 -->
-        <div v-if="msg.type !== 'file'" class="chat-box">
-          <p v-html="msg.content" />
-        </div>
-        <!-- 文件消息 -->
-        <div v-else class="chat-box file-message">
-          <div class="file-info">
-            <n-icon size="20" class="file-icon">
-              <component :is="getFileIcon(msg.fileInfo?.type || '')" />
-            </n-icon>
-            <div class="file-details">
-              <div class="file-name">{{ msg.fileInfo?.name }}</div>
-              <div class="file-size">{{ formatFileSize(msg.fileInfo?.size || 0) }}</div>
-            </div>
-            <n-button text size="tiny" class="file-download-btn" @click="downloadFile(msg)">
-              <n-icon size="16"><component :is="DownloadIcon" /></n-icon>
-            </n-button>
-          </div>
-        </div>
+        <chat-message-box :msg="msg" direction="right" @download="downloadFile" />
       </n-thing>
       <n-thing v-if="msg.send !== authUser.id">
-        <!-- 文本消息 -->
-        <div v-if="msg.type !== 'file'" class="chat-box">
-          <p v-html="msg.content" />
-        </div>
-        <!-- 文件消息 -->
-        <div v-else class="chat-box file-message">
-          <div class="file-info">
-            <n-icon size="20" class="file-icon">
-              <component :is="getFileIcon(msg.fileInfo?.type || '')" />
-            </n-icon>
-            <div class="file-details">
-              <div class="file-name">{{ msg.fileInfo?.name }}</div>
-              <div class="file-size">{{ formatFileSize(msg.fileInfo?.size || 0) }}</div>
-            </div>
-            <n-button text size="tiny" class="file-download-btn" @click="downloadFile(msg)">
-              <n-icon size="16"><component :is="DownloadIcon" /></n-icon>
-            </n-button>
-          </div>
-        </div>
+        <chat-message-box :msg="msg" direction="left" @download="downloadFile" />
         <div class="status-wrap right">
           <n-icon v-if="msg.status === 'sent'" size="16" class="status-icon spin">
             <component :is="LoadingIcon" />
@@ -100,14 +64,13 @@
 </template>
 
 <script setup lang="ts">
-import type { ConversationResponse, ConversationMsgResponse } from '@/models/conversation.ts'
-import { getConversationHis } from '@/api/conversation.ts'
-import { onMounted, ref, watch, inject, type Ref, onUnmounted } from 'vue'
-import { getAuthUser } from '@/utils/auth.ts'
-import WebSocketService from '@/utils/websocket.ts'
-import { Loading3QuartersOutlined as LoadingIcon, ExclamationCircleOutlined as WarningIcon, VerticalAlignBottomOutlined as BackBottomIcon, 
-  FileOutlined, FileTextOutlined, FileImageOutlined, VideoCameraOutlined, AudioOutlined, DownloadOutlined as DownloadIcon } from '@vicons/antd'
-import eventBus from '@/utils/eventBus.ts'
+import type { ConversationResponse, ConversationMsgResponse } from '@/models/conversation'
+import { getConversationHis } from '@/api/conversation'
+import { getAuthUser } from '@/utils/auth'
+import WebSocketService from '@/utils/websocket'
+import { Loading3QuartersOutlined as LoadingIcon, ExclamationCircleOutlined as WarningIcon, VerticalAlignBottomOutlined as BackBottomIcon } from '@vicons/antd'
+import eventBus from '@/utils/eventBus'
+import ChatMessageBox from '@/components/chat/ChatMessageBox.vue'
 
 const props = defineProps<{
   conversation: ConversationResponse | undefined;
@@ -265,8 +228,6 @@ onMounted(() => {
   }
 })
 
-import { nextTick } from 'vue'
-
 const scrollToBottom = () => {
   // 设置滚动中标志
   isScrollingToBottom.value = true
@@ -366,26 +327,20 @@ const getLastConversationTime = (time: number) => {
   }
 }
 
-// 获取文件图标
-const getFileIcon = (fileType: string) => {
-  if (fileType.startsWith('image/')) return FileImageOutlined
-  if (fileType.startsWith('video/')) return VideoCameraOutlined
-  if (fileType.startsWith('audio/')) return AudioOutlined
-  if (fileType.includes('text/') || fileType.endsWith('pdf')) return FileTextOutlined
-  return FileOutlined
-}
-
-// 格式化文件大小
-const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes'
-  const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
 // 下载文件
 const downloadFile = (msg: ConversationMsgResponse) => {
+  if (msg.fileInfo && msg.fileInfo.url) {
+    // 创建临时链接并触发下载
+    const link = document.createElement('a')
+    link.href = msg.fileInfo.url
+    link.download = msg.fileInfo.name || '下载文件'
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } else {
+    console.error('文件信息不完整，无法下载')
+  }
 }
 
 const onResend = (msg: ConversationMsgResponse) => {
@@ -456,60 +411,6 @@ const onResend = (msg: ConversationMsgResponse) => {
 
 .status-wrap.right .status-icon.spin.n-icon{
   margin-left: 3px!important;
-}
-
-/* 文件消息样式 */
-.file-message {
-  max-width: 300px;
-  min-width: 200px;
-}
-
-.file-info {
-  display: flex;
-  align-items: center;
-  padding: 5px 0;
-}
-
-.file-icon {
-  margin-right: 10px;
-  color: #1890ff;
-}
-
-.file-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.file-name {
-  font-size: 13px;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-bottom: 2px;
-}
-
-.file-size {
-  font-size: 11px;
-  color: rgba(0, 0, 0, 0.5);
-}
-
-.file-download-btn {
-  margin-left: 5px;
-  padding: 0;
-  min-width: auto;
-}
-
-.box-left .file-message:hover {
-  background-color: #dcdcdc;
-}
-
-.box-right .file-message {
-  background-color: #07C16F;
-}
-
-.box-right .file-message:hover {
-  background-color: #18a058;
 }
 
 .status-icon {
