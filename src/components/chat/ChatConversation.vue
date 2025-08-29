@@ -2,50 +2,14 @@
   <div class="chat-container">
   <n-list v-for="[key, value] in Array.from(conversationMap.entries())" :key="key.getTime()" class="group-chat" :show-divider="false">
     <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(key.getTime()) }}</n-tag></div>
-    <n-list-item v-for="msg in value" :key="msg.id" :class="msg.send === authUser.id ? 'box-right' : 'box-left'">
-      <template #suffix v-if="msg.send === authUser.id">
-        <n-avatar
-          class="chat-avatar"
-          round
-          size="medium"
-          :src="msg.avatar"
-        />
-      </template>
-      <template #prefix v-if="msg.send !== authUser.id">
-        <n-avatar
-          class="chat-avatar"
-          round
-          size="medium"
-          :src="msg.avatar"
-        />
-      </template>
-      <n-thing v-if="msg.send === authUser.id">
-        <div class="status-wrap left">
-          <n-icon v-if="msg.status === 'sent'" size="16" class="status-icon spin">
-            <component :is="LoadingIcon" />
-          </n-icon>
-          <n-button v-else-if="msg.status === 'failed'" text size="tiny" class="status-icon resend-btn" @click="onResend(msg)">
-            <n-icon size="16">
-              <component :is="WarningIcon" />
-            </n-icon>
-          </n-button>
-        </div>
-        <chat-message-box :msg="msg" direction="right" @download="downloadFile" />
-      </n-thing>
-      <n-thing v-if="msg.send !== authUser.id">
-        <chat-message-box :msg="msg" direction="left" @download="downloadFile" />
-        <div class="status-wrap right">
-          <n-icon v-if="msg.status === 'sent'" size="16" class="status-icon spin">
-            <component :is="LoadingIcon" />
-          </n-icon>
-          <n-button v-else-if="msg.status === 'failed'" text size="tiny" class="status-icon resend-btn" @click="onResend(msg)">
-            <n-icon size="16">
-              <component :is="WarningIcon" />
-            </n-icon>
-          </n-button>
-        </div>
-      </n-thing>
-    </n-list-item>
+    <chat-message-item 
+      v-for="msg in value" 
+      :key="msg.id" 
+      :msg="msg" 
+      :current-user-id="authUser.id"
+      @download="downloadFile"
+      @resend="onResend"
+    />
   </n-list>
 
   <!-- 滚动到底部按钮 -->
@@ -68,9 +32,9 @@ import type { ConversationResponse, ConversationMsgResponse } from '@/models/con
 import { getConversationHis } from '@/api/conversation'
 import { getAuthUser } from '@/utils/auth'
 import WebSocketService from '@/utils/websocket'
-import { Loading3QuartersOutlined as LoadingIcon, ExclamationCircleOutlined as WarningIcon, VerticalAlignBottomOutlined as BackBottomIcon } from '@vicons/antd'
+import { VerticalAlignBottomOutlined as BackBottomIcon } from '@vicons/antd'
 import eventBus from '@/utils/eventBus'
-import ChatMessageBox from '@/components/chat/ChatMessageBox.vue'
+import ChatMessageItem from '@/components/chat/ChatMessageItem.vue'
 
 const props = defineProps<{
   conversation: ConversationResponse | undefined;
@@ -396,54 +360,6 @@ const onResend = (msg: ConversationMsgResponse) => {
   line-height: 1.0;
 }
 
-.status-wrap {
-  display: inline;
-  padding: 5px;
-}
-
-.status-wrap.right {
-  position: absolute;
-}
-
-.status-wrap.left .status-icon.spin.n-icon{
-  margin-right: 3px!important;
-}
-
-.status-wrap.right .status-icon.spin.n-icon{
-  margin-left: 3px!important;
-}
-
-.status-icon {
-    font-size: 14px!important;
-    opacity: 0.7;
-    transition: opacity 0.3s;
-  }
-
-  .status-icon:hover {
-  opacity: 1;
-}
-
-.resend-btn {
-  padding: 0;
-  min-width: auto;
-  height: auto;
-  opacity: 0.7;
-}
-
-.resend-btn:hover {
-  opacity: 1;
-  background-color: transparent;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.spin {
-  animation: spin 1s linear infinite;
-}
-
 .chat-box:before {
   content: "";
   position: absolute;
@@ -506,19 +422,6 @@ const onResend = (msg: ConversationMsgResponse) => {
 
 .box-right .chat-box:hover:before {
   border-left: 10px solid #18a058;
-}
-
-:deep(.box-right .n-thing-main__content) {
-  display: flex;
-  justify-content: flex-end;
-}
-
-:deep(.box-left .n-list-item__prefix) {
-  margin-right: 15px !important;
-}
-
-:deep(.box-right .n-list-item__suffix) {
-  margin-left: 15px!important;
 }
 
 .last-time-tag {
