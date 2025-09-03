@@ -209,7 +209,7 @@ const sendMessage = () => {
       name: '',
       size: 0,
       type: '',
-      url: ''
+      path: ''
     }
   }
 
@@ -284,7 +284,8 @@ const fileUpload = async (file: File) => {
       name: file.name,
       size: file.size,
       type: file.type,
-      url: ''
+      path: '',
+      id: ''
     },
     type: 'file',
   };
@@ -302,14 +303,26 @@ const fileUpload = async (file: File) => {
     console.error('Failed to push message: wsService is undefined')
   }
 
-  // 刷新对话列表
-  // eventBus.emit('messageSent')
-
   try {
     // 上传文件到服务器
     const uploadResponse = await uploadFile(file, clientTmpId);
-    console.log(uploadResponse.id);
+    // 使用响应式方式更新文件ID
+    if (wsService.value) {
+      // 找到对应的消息并更新
+      const index = wsService.value.messages.findIndex(msg => msg.clientTmpId === clientTmpId);
+      if (index !== -1) {
+        // 创建新对象以触发Vue的响应式更新
+        wsService.value.messages[index] = {
+          ...wsService.value.messages[index],
+          fileInfo: {
+            ...wsService.value.messages[index].fileInfo,
+            id: uploadResponse.id
+          }
+        };
+      }
+    }
     message.success('文件上传成功');
+    eventBus.emit('messageSent')
   } catch (error) {
     console.error('File upload failed:', error);
     message.error('文件上传失败，请重试');

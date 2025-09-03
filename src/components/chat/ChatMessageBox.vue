@@ -5,10 +5,10 @@
   </div>
   <!-- 文件消息 -->
   <div v-else class="file-message-container" :class="[direction]">
-    <div class="file-card" :class="getFileTypeClass(msg.fileInfo?.type || '')">
+    <div class="file-card" :class="getFileTypeClass(msg.fileInfo?.name || '')">
       <div class="file-icon-wrapper">
         <n-icon size="24" class="file-icon">
-          <component :is="getFileIcon(msg.fileInfo?.type || '')" />
+          <component :is="getFileIcon(msg.fileInfo?.name || '')" />
         </n-icon>
       </div>
       <div class="file-content">
@@ -19,7 +19,8 @@
         <n-button 
           text
           size="small" 
-          class="download-btn" 
+          class="download-btn"
+          :disabled="!msg.fileInfo || msg.fileInfo.id === ''"
           @click="downloadFile(msg)"
         >
           <template #icon>
@@ -46,6 +47,7 @@ import {
   VideoCameraOutlined, 
   AudioOutlined,
   FileMarkdownOutlined,
+  FileTextOutlined,
   DownloadOutlined as DownloadIcon 
 } from '@vicons/antd'
 
@@ -65,7 +67,7 @@ const emit = defineEmits<{
 // 获取文件图标
 const getFileIcon = (fileType: string) => {
   // 图片文件
-  if (fileType.startsWith('image/')) return FileImageOutlined
+  if (fileType.startsWith('image/') || fileType.endsWith('.jpg') || fileType.endsWith('.jpeg') || fileType.endsWith('.png') || fileType.endsWith('.gif')) return FileImageOutlined
   
   // 视频文件
   if (fileType.startsWith('video/')) return VideoCameraOutlined
@@ -92,7 +94,7 @@ const getFileIcon = (fileType: string) => {
   if (fileType.endsWith('.md') || fileType.endsWith('.markdown')) return FileMarkdownOutlined
   
   // 文本文件
-  if (fileType.startsWith('text/')) return FileMarkdownOutlined
+  if (fileType.startsWith('text/') || fileType.endsWith('.txt') || fileType.endsWith('.json')) return FileTextOutlined
   
   // 默认文件
   return FileOutlined
@@ -101,7 +103,7 @@ const getFileIcon = (fileType: string) => {
 // 获取文件类型类名
 const getFileTypeClass = (fileType: string) => {
   // 图片文件
-  if (fileType.startsWith('image/')) return 'file-type-image'
+  if (fileType.startsWith('image/') || fileType.endsWith('.jpg') || fileType.endsWith('.jpeg') || fileType.endsWith('.png') || fileType.endsWith('.gif')) return 'file-type-image'
   
   // 视频文件
   if (fileType.startsWith('video/')) return 'file-type-video'
@@ -112,11 +114,19 @@ const getFileTypeClass = (fileType: string) => {
   // PDF文件
   if (fileType === 'application/pdf' || fileType.endsWith('.pdf')) return 'file-type-pdf'
   
-  // Office文档（Word, Excel, PowerPoint）
-  if (fileType.includes('word') || fileType.includes('doc') || fileType.endsWith('.docx') || fileType.endsWith('.doc') ||
-      fileType.includes('excel') || fileType.includes('sheet') || fileType.endsWith('.xlsx') || fileType.endsWith('.xls') ||
-      fileType.includes('powerpoint') || fileType.includes('presentation') || fileType.endsWith('.pptx') || fileType.endsWith('.ppt')) {
-    return 'file-type-office'
+  // Word文档
+  if (fileType.includes('word') || fileType.includes('doc') || fileType.endsWith('.docx') || fileType.endsWith('.doc')) {
+    return 'file-type-word'
+  }
+  
+  // Excel表格
+  if (fileType.includes('excel') || fileType.includes('sheet') || fileType.endsWith('.xlsx') || fileType.endsWith('.xls')) {
+    return 'file-type-excel'
+  }
+  
+  // PowerPoint演示文稿
+  if (fileType.includes('powerpoint') || fileType.includes('presentation') || fileType.endsWith('.pptx') || fileType.endsWith('.ppt')) {
+    return 'file-type-ppt'
   }
   
   // 压缩文件
@@ -125,7 +135,7 @@ const getFileTypeClass = (fileType: string) => {
   }
   
   // 文本文件
-  if (fileType.startsWith('text/') || fileType.endsWith('.md') || fileType.endsWith('.markdown')) {
+  if (fileType.startsWith('text/') || fileType.endsWith('.txt') || fileType.endsWith('.json')) {
     return 'file-type-text'
   }
   
@@ -135,9 +145,9 @@ const getFileTypeClass = (fileType: string) => {
 
 // 格式化文件大小
 const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes'
+  if (bytes === 0) return '0 B'
   const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
@@ -250,7 +260,7 @@ const downloadFile = (msg: ConversationMsgResponse) => {
 .file-card:hover {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
-  background: #f1f5f9;
+  background: #e2e8f0;
 }
 
 .file-icon-wrapper {
@@ -289,36 +299,50 @@ const downloadFile = (msg: ConversationMsgResponse) => {
 }
 
 /* 根据文件类型设置不同的背景色 */
+/* 用户指定的颜色方案 */
 .file-type-image .file-icon-wrapper {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #3b82f6;
 }
 
 .file-type-video .file-icon-wrapper {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: #3b82f6;
 }
 
 .file-type-audio .file-icon-wrapper {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: #3b82f6;
 }
 
 .file-type-pdf .file-icon-wrapper {
-  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  background: #3b82f6;
 }
 
-.file-type-office .file-icon-wrapper {
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+/* Word文档 - 蓝色 */
+.file-type-word .file-icon-wrapper {
+  background: #3b82f6;
 }
 
+/* Excel表格 - 绿色 */
+.file-type-excel .file-icon-wrapper {
+  background: #10B981;
+}
+
+/* PowerPoint演示文稿 - 橙红色 */
+.file-type-ppt .file-icon-wrapper {
+  background: #F97316;
+}
+
+/* 压缩文件 - 黄色（保持不变） */
 .file-type-archive .file-icon-wrapper {
-  background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%);
+  background: #F59E0B;
 }
 
 .file-type-text .file-icon-wrapper {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: #3b82f6;
 }
 
+/* 默认文件 - 灰色（保持不变） */
 .file-type-default .file-icon-wrapper {
-  background: linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%);
+  background: #6B7280;
 }
 
 .file-content {

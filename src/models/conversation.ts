@@ -21,10 +21,11 @@ export interface ConversationMsgResponse {
   clientTmpId?: string;
   actualId: string;
   fileInfo: {
+    id?: string;
     name: string;
     size: number;
     type: string;
-    url: string;
+    path: string;
   }
 }
 

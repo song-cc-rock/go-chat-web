@@ -17,6 +17,8 @@ export const uploadFile = async (file: File, tmpId: string): Promise<UploadRespo
     },
     timeout: 30000
   })
+
+  console.log(response);
   
-  return response.data as UploadResponse
+  return response as unknown as UploadResponse
 }

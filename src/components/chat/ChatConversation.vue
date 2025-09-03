@@ -447,10 +447,10 @@ const getLastConversationTime = (time: number) => {
 
 // 下载文件
 const downloadFile = (msg: ConversationMsgResponse) => {
-  if (msg.fileInfo && msg.fileInfo.url) {
+  if (msg.fileInfo && msg.fileInfo.path) {
     // 创建临时链接并触发下载
     const link = document.createElement('a')
-    link.href = msg.fileInfo.url
+    link.href = msg.fileInfo.path
     link.download = msg.fileInfo.name || '下载文件'
     link.target = '_blank'
     document.body.appendChild(link)
@@ -484,7 +484,7 @@ const onResend = async (msg: ConversationMsgResponse) => {
         name: msg.fileInfo.name,
         size: msg.fileInfo.size,
         type: msg.fileInfo.type,
-        url: msg.fileInfo.url,
+        path: msg.fileInfo.path,
       }
     }
     
@@ -513,7 +513,7 @@ const onResend = async (msg: ConversationMsgResponse) => {
         name: '',
         size: 0,
         type: '',
-        url: '',
+        path: '',
       }
     }
     // local push
