@@ -543,10 +543,6 @@ const formatFileSize = (bytes: number): string => {
     border-radius: 10px;
 }
 
-.n-scrollbar-rail__scrollbar {
-    display: none !important;
-}
-
 .emoji-in-text,
 .emoji-item {
   font-size: 20px !important;

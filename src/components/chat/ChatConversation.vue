@@ -1,6 +1,6 @@
 <template>
   <div class="chat-container">
-    <!-- 加载更多按钮 -->
+    <!-- 加载更多 -->
     <transition name="load-more-fade">
       <div v-if="hasMoreHistory && showLoadMoreBtn" class="load-more-container">
         <n-button
@@ -24,7 +24,14 @@
       </div>
     </transition>
     
-    <n-list v-for="[key, value] in Array.from(conversationMap.entries())" :key="key.getTime()" class="group-chat" :show-divider="false">
+  <!-- 对话历史列表 -->
+    <n-list 
+      v-if="showMessages" 
+      v-for="[key, value] in Array.from(conversationMap.entries())" 
+      :key="key.getTime()" 
+      class="group-chat" 
+      :show-divider="false"
+    >
       <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(key.getTime()) }}</n-tag></div>
       <chat-message-item 
         v-for="msg in value" 
@@ -43,7 +50,7 @@
       size="small"
       :bordered="false"
       circle
-      @click="scrollToBottom"
+      @click="scrollToBottom()"
       :style="{ opacity: scrollToBottomBtnOpacity }"
     >
       <n-icon size="21"><component :is="BackBottomIcon" /></n-icon>
@@ -75,8 +82,9 @@ const currentPage = ref(1)
 const pageSize = 30
 const hasMoreHistory = ref(true)
 const isLoadingMore = ref(false)
-const isInitialLoad = ref(true)
 const showLoadMoreBtn = ref(false)
+// 控制消息列表的显示，用于优化初始加载体验
+const showMessages = ref(false)
 
 onMounted(async () => {
   // 监听新消息和消息状态变化
@@ -159,10 +167,33 @@ const loadMoreHistory = async () => {
     return
   }
   
+  const scrollContainer = document.querySelector('.n-scrollbar-container')
+  let initialScrollHeight = 0
+  let initialScrollTop = 0
+  
+  // 记录加载前的滚动位置和内容高度
+  if (scrollContainer) {
+    initialScrollHeight = scrollContainer.scrollHeight
+    initialScrollTop = scrollContainer.scrollTop
+  }
+  
   isLoadingMore.value = true
   
   try {
     await loadConversationHistory(props.conversation.id, currentPage.value + 1)
+    
+    // 加载完成后，保持用户上次查看的位置
+    if (scrollContainer) {
+      // 使用nextTick确保DOM已更新
+      nextTick(() => {
+        // 计算新增内容的高度
+        const newScrollHeight = scrollContainer.scrollHeight
+        const addedHeight = newScrollHeight - initialScrollHeight
+        
+        // 调整滚动位置，保持在加载前的相对位置
+        scrollContainer.scrollTop = initialScrollTop + addedHeight
+      })
+    }
   } finally {
     // 添加延迟结束动画，让用户看到loading效果
     setTimeout(() => {
@@ -183,17 +214,33 @@ watch(
 
     // 重置分页状态
     resetPagination()
-    isInitialLoad.value = true
     
     // 加载第一页数据
     await loadConversationHistory(newId, 1, true)
     eventBus.emit('refreshUnreadCount')
     
-    // 初始加载后，直接定位到底部（不使用动画）
-    nextTick(() => {
-      scrollToBottomInstantly()
-      isInitialLoad.value = false
-    })
+    // 延迟一小段时间确保DOM已更新
+    setTimeout(() => {
+      // 计算滚动到底部所需的位置，但先不显示内容
+      const scrollContainer = document.querySelector('.n-scrollbar-container')
+      
+      if (scrollContainer) {
+        // 临时显示内容以计算滚动高度
+        showMessages.value = true
+        
+        // 在下一个DOM更新周期计算滚动位置
+        nextTick(() => {
+          // 直接滚动到底部（无动画）
+          scrollContainer.scrollTop = scrollContainer.scrollHeight
+          
+          // 内容已经在底部位置了，保持显示
+          showMessages.value = true
+        })
+      } else {
+        // 如果没有滚动容器，直接显示内容
+        showMessages.value = true
+      }
+    }, 100)
   },
   { immediate: true }
 )
@@ -256,64 +303,62 @@ const isScrollingToBottom = ref(false)
 
 // 监听滚动事件
 onMounted(() => {
-  nextTick(() => {
-    const scrollContainer = document.querySelector('.chat-container')
-    
-    if (scrollContainer) {
-      const handleScroll = () => {
-        // 检查是否滚动到顶部（显示加载更多按钮）
-        const isAtTop = scrollContainer.scrollTop <= 5
-        showLoadMoreBtn.value = isAtTop
-        
-        // 检查是否滚动到底部附近（100px内）
-        const scrollTop = scrollContainer.scrollTop
-        const scrollHeight = scrollContainer.scrollHeight
-        const clientHeight = scrollContainer.clientHeight
-        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
-        
-        // 简单逻辑：不在底部附近就显示按钮，在底部附近就隐藏
-        if (!isScrollingToBottom.value) {
-          if (!isNearBottom) {
-            showScrollToBottomBtn.value = true
-            scrollToBottomBtnOpacity.value = 1
-          } else {
-            showScrollToBottomBtn.value = false
-          }
-        }
+  const scrollContainer = document.querySelector('.n-scrollbar-container')
+  if (scrollContainer) {
+    const handleScroll = () => {
+      // 检查是否滚动到顶部（显示加载更多按钮）
+      const isAtTop = scrollContainer.scrollTop <= 5
+      showLoadMoreBtn.value = isAtTop && hasMoreHistory.value && !isLoadingMore.value
+      
+      // 检查是否滚动到底部附近（100px内）
+      const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100
+      if (isNearBottom && showScrollToBottomBtn.value && !isScrollingToBottom.value) {
+        // 接近底部时，按钮淡出
+        scrollToBottomBtnOpacity.value = 0
+        setTimeout(() => {
+          showScrollToBottomBtn.value = false
+          // 重置透明度，为下次显示做准备
+          scrollToBottomBtnOpacity.value = 1
+        }, 300)
+      } else if (!isNearBottom && !showScrollToBottomBtn.value && !isScrollingToBottom.value) {
+        // 远离底部时，显示按钮
+        showScrollToBottomBtn.value = true
+        scrollToBottomBtnOpacity.value = 1
       }
-
-      // 初始检查
-      setTimeout(() => {
-        handleScroll()
-      }, 100)
-
-      // 添加滚动监听
-      scrollContainer.addEventListener('scroll', handleScroll)
-
-      // 组件卸载时移除监听
-      onUnmounted(() => {
-        scrollContainer.removeEventListener('scroll', handleScroll)
-      })
     }
-  })
+
+    // 初始检查
+    handleScroll()
+    // 添加滚动监听
+    scrollContainer.addEventListener('scroll', handleScroll)
+    // 组件卸载时移除监听
+    onUnmounted(() => {
+      scrollContainer.removeEventListener('scroll', handleScroll)
+    })
+  }
 })
 
-const scrollToBottom = () => {
+const scrollToBottom = (smooth = true) => {
   // 设置滚动中标志
   isScrollingToBottom.value = true
   
   // 使用nextTick确保DOM更新后再滚动
   nextTick(() => {
-    const scrollContainer = document.querySelector('.chat-container')
+    const scrollContainer = document.querySelector('.n-scrollbar-container')
     if (scrollContainer) {
       // 立即隐藏按钮
       showScrollToBottomBtn.value = false
       
-      // 使用平滑滚动
-      scrollContainer.scrollTo({
-        top: scrollContainer.scrollHeight,
-        behavior: 'smooth'
-      })
+      // 根据参数决定是否使用平滑滚动
+      if (smooth) {
+        scrollContainer.scrollTo({ 
+          top: scrollContainer.scrollHeight, 
+          behavior: 'smooth' 
+        })
+      } else {
+        // 直接跳到底部，无动画
+        scrollContainer.scrollTop = scrollContainer.scrollHeight
+      }
     }
   })
   
@@ -321,15 +366,7 @@ const scrollToBottom = () => {
   setTimeout(() => {
     isScrollingToBottom.value = false
     scrollToBottomBtnOpacity.value = 1
-  }, 800)
-}
-
-// 立即滚动到底部（无动画），用于初始加载
-const scrollToBottomInstantly = () => {
-  const scrollContainer = document.querySelector('.chat-container')
-  if (scrollContainer) {
-    scrollContainer.scrollTop = scrollContainer.scrollHeight
-  }
+  }, smooth ? 800 : 100)
 }
 
 const getConversationMap = (res: ConversationMsgResponse[]) => {
@@ -515,32 +552,6 @@ const onResend = async (msg: ConversationMsgResponse) => {
   transform: translateY(-10px);
 }
 
-.chat-container {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-}
-
-/* 滚动条样式优化 */
-.chat-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.chat-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.chat-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.chat-container::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
 .load-more-container {
   text-align: center;
   padding: 2px 0;
@@ -555,6 +566,7 @@ const onResend = async (msg: ConversationMsgResponse) => {
   font-size: 12px;
   text-decoration: none;
   transition: all 0.3s ease;
+  margin-right: 20px;
 }
 
 .load-more-btn:hover {
@@ -688,8 +700,8 @@ const onResend = async (msg: ConversationMsgResponse) => {
 
 .scroll-to-bottom-btn {
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    bottom: 5px;
+    right: 50%;
     z-index: 9999;
     border: none !important;
     outline: none;
@@ -701,8 +713,15 @@ const onResend = async (msg: ConversationMsgResponse) => {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: opacity 0.3s;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
-    cursor: pointer;
 }
 
 .scroll-to-bottom-btn:hover {
