@@ -81,6 +81,8 @@ import type { ConversationResponse } from '@/models/conversation.ts'
 import { ref, inject, type Ref } from 'vue'
 import WebSocketService from '@/utils/websocket'
 import { getAuthUser } from '@/utils/auth'
+import { uploadFile, type UploadResponse } from '@/api/upload'
+import { useMessage } from 'naive-ui'
 
 const props = defineProps<{
   conversation: ConversationResponse | undefined;
@@ -89,6 +91,7 @@ const authUser = getAuthUser()
 const messageContent = ref('')
 const showEmojiPicker = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
+const message = useMessage()
 // inject ws service
 const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
 
@@ -247,9 +250,16 @@ const handleFileInputChange = (event: Event) => {
   }
 };
 
-const fileUpload = (file: File) => {
+const fileUpload = async (file: File) => {
   if (!props.conversation?.id || !wsService.value) {
     console.error('Cannot upload file: No conversation selected or wsService is unavailable');
+    return;
+  }
+
+  // 验证文件大小（限制为100MB）
+  const maxSize = 100 * 1024 * 1024; // 100MB
+  if (file.size > maxSize) {
+    message.error('文件大小不能超过100MB');
     return;
   }
 
@@ -264,7 +274,7 @@ const fileUpload = (file: File) => {
     content: `[文件] ${file.name} (${formatFileSize(file.size)})`,
     created_at: Date.now(),
     avatar: authUser.avatar || '',
-    status: 'sending',
+    status: 'sending', // 上传中状态
     actualId: '',
     clientTmpId: clientTmpId,
     fileInfo: {
@@ -283,41 +293,15 @@ const fileUpload = (file: File) => {
     eventBus.emit('messageSent');
   }
 
-  // 模拟文件上传过程
-  // 在实际项目中，这里应该调用真实的文件上传API
-  // const simulateFileUpload = () => {
-  //   // 模拟上传延迟
-  //   setTimeout(() => {
-  //     // 上传完成，更新消息状态
-  //     const messageIndex = wsService.value?.messages.findIndex(msg => msg.clientTmpId === clientTmpId);
-  //     if (messageIndex !== undefined && messageIndex !== -1 && wsService.value) {
-  //       // 更新消息状态为已发送
-  //       wsService.value.messages[messageIndex].status = 'sent';
-  //       // 模拟设置文件URL
-  //       wsService.value.messages[messageIndex].fileInfo.url = `https://example.com/uploads/${file.name}`;
-  //       // 触发消息更新事件
-  //       eventBus.emit('messageUpdated', wsService.value.messages[messageIndex]);
-  //     }
-
-  //     // 发送文件消息到WebSocket服务
-  //     wsService.value?.sendMessage({
-  //       ...fileMessage,
-  //       conversation_id: props.conversation.id,
-  //       status: 'sent',
-  //       fileInfo: {
-  //         ...fileMessage.fileInfo,
-  //         url: `https://example.com/uploads/${file.name}`
-  //       }
-  //     });
-
-  //     console.log('File upload completed:', file.name);
-  //   }, 1000); // 模拟1秒上传时间
-  // };
-
-  // 开始模拟上传
-  // simulateFileUpload();
-
-  console.log('File upload initiated:', file.name);
+  try {
+    // 上传文件到服务器
+    const uploadResponse = await uploadFile(file);
+    message.success('文件上传成功');
+    
+  } catch (error) {
+    console.error('File upload failed:', error);
+    message.error('文件上传失败，请重试');
+  }
 };
 
 // 格式化文件大小

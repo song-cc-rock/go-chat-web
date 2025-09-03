@@ -307,35 +307,69 @@ const downloadFile = (msg: ConversationMsgResponse) => {
   }
 }
 
-const onResend = (msg: ConversationMsgResponse) => {
+const onResend = async (msg: ConversationMsgResponse) => {
   if (!props.conversation || !wsService.value || !wsService.value.messages || !wsService.value.messages) return
-  // reuse the same content to resend; create a new local message object
-  const clientTmpId = `temp-${Date.now()}`
-  const newMessage: ConversationMsgResponse = {
-    id: clientTmpId,
-    send: authUser.id,
-    receiver: props.conversation.targetUserId,
-    content: msg.content,
-    created_at: Date.now(),
-    avatar: authUser.avatar || '',
-    status: 'sent',
-    actualId: '',
-    clientTmpId: clientTmpId,
-    // 保留文件相关属性
-    fileInfo: {
-      name: msg.fileInfo.name,
-      size: msg.fileInfo.size,
-      type: msg.fileInfo.type,
-      url: msg.fileInfo.url,
+  
+  // 如果是文件消息，需要重新上传文件
+  if (msg.type === 'file') {
+    // 文件消息重发需要特殊处理，这里只是重发已上传成功的文件消息
+    const clientTmpId = `temp-${Date.now()}`
+    const newMessage: ConversationMsgResponse = {
+      id: clientTmpId,
+      send: authUser.id,
+      receiver: props.conversation.targetUserId,
+      content: msg.content,
+      created_at: Date.now(),
+      avatar: authUser.avatar || '',
+      status: 'sent',
+      actualId: '',
+      clientTmpId: clientTmpId,
+      type: 'file',
+      // 保留文件相关属性
+      fileInfo: {
+        name: msg.fileInfo.name,
+        size: msg.fileInfo.size,
+        type: msg.fileInfo.type,
+        url: msg.fileInfo.url,
+      }
     }
+    
+    // local push
+    wsService.value.messages.push(newMessage)
+    // send
+    wsService.value.sendMessage({
+      ...newMessage,
+      conversation_id: props.conversation.id,
+    })
+  } else {
+    // 文本消息重发
+    const clientTmpId = `temp-${Date.now()}`
+    const newMessage: ConversationMsgResponse = {
+      id: clientTmpId,
+      send: authUser.id,
+      receiver: props.conversation.targetUserId,
+      content: msg.content,
+      created_at: Date.now(),
+      avatar: authUser.avatar || '',
+      status: 'sent',
+      actualId: '',
+      clientTmpId: clientTmpId,
+      // 保留文件相关属性
+      fileInfo: {
+        name: '',
+        size: 0,
+        type: '',
+        url: '',
+      }
+    }
+    // local push
+    wsService.value.messages.push(newMessage)
+    // send
+    wsService.value.sendMessage({
+      ...newMessage,
+      conversation_id: props.conversation.id,
+    })
   }
-  // local push
-  wsService.value.messages.push(newMessage)
-  // send
-  wsService.value.sendMessage({
-    ...newMessage,
-    conversation_id: props.conversation.id,
-  })
 }
 </script>
 
