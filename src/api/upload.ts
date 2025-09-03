@@ -1,23 +1,16 @@
 import { request } from '@/utils/require.ts'
-
-// 文件上传响应类型
-export interface UploadResponse {
-  url: string
-  name: string
-  size: number
-  type: string
-}
+import type { UploadResponse } from '@/models/upload'
 
 /**
  * 上传文件接口
  * @param file 要上传的文件
  * @returns Promise<UploadResponse>
  */
-export const uploadFile = async (file: File): Promise<UploadResponse> => {
+export const uploadFile = async (file: File, tmpId: string): Promise<UploadResponse> => {
   const formData = new FormData()
   formData.append('file', file)
+  formData.append('tmpId', tmpId)
   
-  // 创建专门用于文件上传的请求实例
   const response = await request.post('/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
@@ -25,5 +18,5 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
     timeout: 30000
   })
   
-  return response as UploadResponse
+  return response.data as UploadResponse
 }

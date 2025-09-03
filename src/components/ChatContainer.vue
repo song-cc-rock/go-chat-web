@@ -81,7 +81,9 @@ import type { ConversationResponse } from '@/models/conversation.ts'
 import { ref, inject, type Ref } from 'vue'
 import WebSocketService from '@/utils/websocket'
 import { getAuthUser } from '@/utils/auth'
-import { uploadFile, type UploadResponse } from '@/api/upload'
+import { uploadFile } from '@/api/upload'
+import type { UploadResponse } from '@/models/upload'
+import { generateTempId } from '@/utils/id'
 import { useMessage } from 'naive-ui'
 
 const props = defineProps<{
@@ -191,7 +193,7 @@ const sendMessage = () => {
   const contentWithStyledEmojis = messageContent.value.replace(/([\uD800-\uDBFF][\uDC00-\uDFFF])/g, '<span class=\"emoji-in-text\">$1</span>')
 
   // Create message object
-  const clientTmpId = `temp-${Date.now()}`
+  const clientTmpId = generateTempId()
   const newMessage = {
     id: clientTmpId,
     send: authUser.id,
@@ -200,6 +202,7 @@ const sendMessage = () => {
     created_at: Date.now(),
     avatar: authUser.avatar || '',
     status: 'sent',
+    type: 'text',
     actualId: '',
     clientTmpId: clientTmpId,
     fileInfo: {
@@ -256,15 +259,15 @@ const fileUpload = async (file: File) => {
     return;
   }
 
-  // 验证文件大小（限制为100MB）
-  const maxSize = 100 * 1024 * 1024; // 100MB
+  // validate file size
+  const maxSize = 100 * 1024 * 1024;
   if (file.size > maxSize) {
     message.error('文件大小不能超过100MB');
     return;
   }
 
   // 创建临时ID和文件消息对象
-  const clientTmpId = `temp-${Date.now()}`;
+  const clientTmpId = generateTempId();
   
   // 初始化文件消息
   const fileMessage = {
@@ -274,7 +277,7 @@ const fileUpload = async (file: File) => {
     content: `[文件] ${file.name} (${formatFileSize(file.size)})`,
     created_at: Date.now(),
     avatar: authUser.avatar || '',
-    status: 'sending', // 上传中状态
+    status: 'sent',
     actualId: '',
     clientTmpId: clientTmpId,
     fileInfo: {
@@ -283,21 +286,30 @@ const fileUpload = async (file: File) => {
       type: file.type,
       url: ''
     },
-    type: 'file'
+    type: 'file',
   };
 
-  // 本地添加文件消息，确保立即显示在聊天界面
+  // 发送
+  wsService.value.sendMessage({
+    ...fileMessage,
+    conversation_id: props.conversation.id,
+  })
+
+  // 本地推送
   if (wsService.value) {
-    wsService.value.messages.push(fileMessage);
-    // 触发消息更新事件，通知界面刷新
-    eventBus.emit('messageSent');
+    wsService.value.messages.push(fileMessage)
+  } else {
+    console.error('Failed to push message: wsService is undefined')
   }
+
+  // 刷新对话列表
+  // eventBus.emit('messageSent')
 
   try {
     // 上传文件到服务器
-    const uploadResponse = await uploadFile(file);
+    const uploadResponse = await uploadFile(file, clientTmpId);
+    console.log(uploadResponse.id);
     message.success('文件上传成功');
-    
   } catch (error) {
     console.error('File upload failed:', error);
     message.error('文件上传失败，请重试');

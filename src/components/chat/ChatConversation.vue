@@ -1,38 +1,63 @@
 <template>
   <div class="chat-container">
-  <n-list v-for="[key, value] in Array.from(conversationMap.entries())" :key="key.getTime()" class="group-chat" :show-divider="false">
-    <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(key.getTime()) }}</n-tag></div>
-    <chat-message-item 
-      v-for="msg in value" 
-      :key="msg.id" 
-      :msg="msg" 
-      :current-user-id="authUser.id"
-      @download="downloadFile"
-      @resend="onResend"
-    />
-  </n-list>
+    <!-- 加载更多按钮 -->
+    <transition name="load-more-fade">
+      <div v-if="hasMoreHistory && showLoadMoreBtn" class="load-more-container">
+        <n-button
+          v-if="!isLoadingMore"
+          text
+          tag="a"
+          size="small"
+          type="primary"
+          @click="loadMoreHistory"
+          class="load-more-btn"
+        >
+          <template #icon>
+            <n-icon><component :is="HistoryIcon" /></n-icon>
+          </template>
+          <span class="load-more-text">查看历史消息</span>
+        </n-button>
+        <div v-else class="loading-container">
+          <n-spin :size="16" />
+          <span class="loading-text">加载中...</span>
+        </div>
+      </div>
+    </transition>
+    
+    <n-list v-for="[key, value] in Array.from(conversationMap.entries())" :key="key.getTime()" class="group-chat" :show-divider="false">
+      <div class="last-time-tag"><n-tag size="small">{{ getLastConversationTime(key.getTime()) }}</n-tag></div>
+      <chat-message-item 
+        v-for="msg in value" 
+        :key="msg.id" 
+        :msg="msg" 
+        :current-user-id="authUser.id"
+        @download="downloadFile"
+        @resend="onResend"
+      />
+    </n-list>
 
-  <!-- 滚动到底部按钮 -->
-  <n-button
-    v-if="showScrollToBottomBtn"
-    class="scroll-to-bottom-btn"
-    size="small"
-    :bordered="false"
-    circle
-    @click="scrollToBottom"
-    :style="{ opacity: scrollToBottomBtnOpacity }"
-  >
-    <n-icon size="21"><component :is="BackBottomIcon" /></n-icon>
-  </n-button>
+    <!-- 滚动到底部按钮 -->
+    <n-button
+      v-if="showScrollToBottomBtn"
+      class="scroll-to-bottom-btn"
+      size="small"
+      :bordered="false"
+      circle
+      @click="scrollToBottom"
+      :style="{ opacity: scrollToBottomBtnOpacity }"
+    >
+      <n-icon size="21"><component :is="BackBottomIcon" /></n-icon>
+    </n-button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, inject, watch, onMounted, onUnmounted, nextTick, type Ref } from 'vue'
 import type { ConversationResponse, ConversationMsgResponse } from '@/models/conversation'
 import { getConversationHis } from '@/api/conversation'
 import { getAuthUser } from '@/utils/auth'
 import WebSocketService from '@/utils/websocket'
-import { VerticalAlignBottomOutlined as BackBottomIcon } from '@vicons/antd'
+import { VerticalAlignBottomOutlined as BackBottomIcon, HistoryOutlined as HistoryIcon } from '@vicons/antd'
 import eventBus from '@/utils/eventBus'
 import ChatMessageItem from '@/components/chat/ChatMessageItem.vue'
 
@@ -44,6 +69,14 @@ const conversationMap = ref<Map<Date, ConversationMsgResponse[]>>(new Map())
 const authUser = getAuthUser()
 // 注入WebSocket服务
 const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
+
+// 分页加载相关状态
+const currentPage = ref(1)
+const pageSize = 30
+const hasMoreHistory = ref(true)
+const isLoadingMore = ref(false)
+const isInitialLoad = ref(true)
+const showLoadMoreBtn = ref(false)
 
 onMounted(async () => {
   // 监听新消息和消息状态变化
@@ -84,19 +117,83 @@ onMounted(async () => {
   }
 })
 
+// 重置分页状态
+const resetPagination = () => {
+  currentPage.value = 1
+  hasMoreHistory.value = true
+  isLoadingMore.value = false
+}
+
+// 加载对话历史
+const loadConversationHistory = async (conversationId: string, page: number, isInitial: boolean = false) => {
+  try {
+    const msgList = await getConversationHis(conversationId, page, pageSize)
+    
+    if (msgList.length < pageSize) {
+      hasMoreHistory.value = false
+    }
+    
+    if (isInitial) {
+      // 初始加载，直接设置
+      conversationMap.value = getConversationMap(msgList)
+    } else {
+      // 加载更多历史消息，合并到现有数据的前面
+      const historyMap = getConversationMap(msgList)
+      const currentMap = conversationMap.value
+      
+      // 将历史数据放在前面，现有数据放在后面
+      // 保持时间顺序：较早的消息在上，较新的消息在下
+      const mergedMap = new Map([...historyMap, ...currentMap])
+      conversationMap.value = mergedMap
+    }
+    
+    currentPage.value = page
+  } catch (error) {
+    console.error('加载对话历史失败:', error)
+  }
+}
+
+// 加载更多历史消息
+const loadMoreHistory = async () => {
+  if (!props.conversation?.id || isLoadingMore.value || !hasMoreHistory.value) {
+    return
+  }
+  
+  isLoadingMore.value = true
+  
+  try {
+    await loadConversationHistory(props.conversation.id, currentPage.value + 1)
+  } finally {
+    // 添加延迟结束动画，让用户看到loading效果
+    setTimeout(() => {
+      isLoadingMore.value = false
+    }, 800)
+  }
+}
+
 // 当选中的会话发生变化时，重新加载历史消息并重置分组
 watch(
   () => props.conversation?.id,
   async (newId) => {
     if (!newId) {
       conversationMap.value = new Map()
+      resetPagination()
       return
     }
 
-    const msgList = await getConversationHis(newId)
+    // 重置分页状态
+    resetPagination()
+    isInitialLoad.value = true
+    
+    // 加载第一页数据
+    await loadConversationHistory(newId, 1, true)
     eventBus.emit('refreshUnreadCount')
-    conversationMap.value = getConversationMap(msgList)
-    scrollToBottom()
+    
+    // 初始加载后，直接定位到底部（不使用动画）
+    nextTick(() => {
+      scrollToBottomInstantly()
+      isInitialLoad.value = false
+    })
   },
   { immediate: true }
 )
@@ -159,37 +256,46 @@ const isScrollingToBottom = ref(false)
 
 // 监听滚动事件
 onMounted(() => {
-  const scrollContainer = document.querySelector('.n-scrollbar-container')
-  if (scrollContainer) {
-    const handleScroll = () => {
-  // 检查是否滚动到底部附近（100px内）
-  const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100
-  if (isNearBottom && showScrollToBottomBtn.value && !isScrollingToBottom.value) {
-    // 接近底部时，按钮淡出
-    scrollToBottomBtnOpacity.value = 0
-    setTimeout(() => {
-      showScrollToBottomBtn.value = false
-      // 重置透明度，为下次显示做准备
-      scrollToBottomBtnOpacity.value = 1
-    }, 300)
-  } else if (!isNearBottom && !showScrollToBottomBtn.value && !isScrollingToBottom.value) {
-    // 远离底部时，显示按钮
-    showScrollToBottomBtn.value = true
-    scrollToBottomBtnOpacity.value = 1
-  }
+  nextTick(() => {
+    const scrollContainer = document.querySelector('.chat-container')
+    
+    if (scrollContainer) {
+      const handleScroll = () => {
+        // 检查是否滚动到顶部（显示加载更多按钮）
+        const isAtTop = scrollContainer.scrollTop <= 5
+        showLoadMoreBtn.value = isAtTop
+        
+        // 检查是否滚动到底部附近（100px内）
+        const scrollTop = scrollContainer.scrollTop
+        const scrollHeight = scrollContainer.scrollHeight
+        const clientHeight = scrollContainer.clientHeight
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+        
+        // 简单逻辑：不在底部附近就显示按钮，在底部附近就隐藏
+        if (!isScrollingToBottom.value) {
+          if (!isNearBottom) {
+            showScrollToBottomBtn.value = true
+            scrollToBottomBtnOpacity.value = 1
+          } else {
+            showScrollToBottomBtn.value = false
+          }
+        }
+      }
+
+      // 初始检查
+      setTimeout(() => {
+        handleScroll()
+      }, 100)
+
+      // 添加滚动监听
+      scrollContainer.addEventListener('scroll', handleScroll)
+
+      // 组件卸载时移除监听
+      onUnmounted(() => {
+        scrollContainer.removeEventListener('scroll', handleScroll)
+      })
     }
-
-    // 初始检查
-    handleScroll()
-
-    // 添加滚动监听
-    scrollContainer.addEventListener('scroll', handleScroll)
-
-    // 组件卸载时移除监听
-    onUnmounted(() => {
-      scrollContainer.removeEventListener('scroll', handleScroll)
-    })
-  }
+  })
 })
 
 const scrollToBottom = () => {
@@ -198,7 +304,7 @@ const scrollToBottom = () => {
   
   // 使用nextTick确保DOM更新后再滚动
   nextTick(() => {
-    const scrollContainer = document.querySelector('.n-scrollbar-container')
+    const scrollContainer = document.querySelector('.chat-container')
     if (scrollContainer) {
       // 立即隐藏按钮
       showScrollToBottomBtn.value = false
@@ -218,6 +324,14 @@ const scrollToBottom = () => {
   }, 800)
 }
 
+// 立即滚动到底部（无动画），用于初始加载
+const scrollToBottomInstantly = () => {
+  const scrollContainer = document.querySelector('.chat-container')
+  if (scrollContainer) {
+    scrollContainer.scrollTop = scrollContainer.scrollHeight
+  }
+}
+
 const getConversationMap = (res: ConversationMsgResponse[]) => {
   const groupedMap = new Map<Date, ConversationMsgResponse[]>()
 
@@ -225,10 +339,13 @@ const getConversationMap = (res: ConversationMsgResponse[]) => {
     return groupedMap
   }
 
+  // 后端返回的数据是按时间倒序排列，需要先反转为正序（早到晚）
+  const sortedMessages = [...res].reverse()
+
   let currentGroupKey: Date | null = null
   let currentGroup: ConversationMsgResponse[] = []
 
-  res.forEach((message) => {
+  sortedMessages.forEach((message) => {
     // 将秒级时间戳转换为毫秒级再创建Date对象
     const messageTime = new Date(message.created_at * 1000)
 
@@ -374,6 +491,91 @@ const onResend = async (msg: ConversationMsgResponse) => {
 </script>
 
 <style scoped>
+.load-more-text {
+  margin-top: 2px;
+}
+
+.loading-text {
+  margin-top: 2px;
+}
+
+/* 加载更多按钮的过渡动画 */
+.load-more-fade-enter-active,
+.load-more-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.load-more-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.load-more-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.chat-container {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* 滚动条样式优化 */
+.chat-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.load-more-container {
+  text-align: center;
+  padding: 2px 0;
+  min-height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.load-more-btn {
+  color: #18a058 !important;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.load-more-btn:hover {
+  color: #36ad6a !important;
+  text-decoration: none;
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* 保持和父容器一样的尺寸，不额外添加padding */
+}
+
+.loading-text {
+  font-size: 12px;
+  color: #18a058;
+  font-weight: 500;
+}
+
 .group-chat {
   padding-top: 10px;
   padding-right: 20px;
@@ -486,8 +688,8 @@ const onResend = async (msg: ConversationMsgResponse) => {
 
 .scroll-to-bottom-btn {
     position: absolute;
-    bottom: 5px;
-    right: 50%;
+    bottom: 20px;
+    right: 20px;
     z-index: 9999;
     border: none !important;
     outline: none;
@@ -499,15 +701,8 @@ const onResend = async (msg: ConversationMsgResponse) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.3s;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
+    cursor: pointer;
 }
 
 .scroll-to-bottom-btn:hover {
