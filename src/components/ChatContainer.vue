@@ -307,17 +307,20 @@ const fileUpload = async (file: File) => {
     const uploadResponse = await uploadFile(file, clientTmpId);
     // 使用响应式方式更新文件ID
     if (wsService.value) {
-      // 找到对应的消息并更新
+    // 找到对应的消息并更新
       const index = wsService.value.messages.findIndex(msg => msg.clientTmpId === clientTmpId);
       if (index !== -1) {
         // 创建新对象以触发Vue的响应式更新
-        wsService.value.messages[index] = {
+        const updatedMessage = {
           ...wsService.value.messages[index],
           fileInfo: {
             ...wsService.value.messages[index].fileInfo,
             id: uploadResponse.id
           }
         };
+        
+        // 使用splice替换整个消息对象，确保触发响应式更新
+        wsService.value.messages.splice(index, 1, updatedMessage);
       }
     }
     message.success('文件上传成功');

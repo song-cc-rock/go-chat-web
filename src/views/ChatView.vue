@@ -68,7 +68,6 @@ onMounted(async () => {
         // 遍历所有新消息而不仅仅是最后一条
         newMessages.forEach(msg => {
           if (msg.send !== authUser.id && msg.type !== 'ack') {
-            console.log('Received new message from:', msg.send);
             // 检查是否是当前激活对话的消息
             if (selectedConversation.value && msg.send === selectedConversation.value.targetUserId) {
               // 清空当前对话未读条数

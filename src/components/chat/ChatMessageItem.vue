@@ -41,12 +41,6 @@
           direction="left" 
           @download="handleDownload" 
         />
-        <chat-message-status 
-          :status="msg.status" 
-          :msg="msg" 
-          position="right"
-          @resend="handleResend" 
-        />
       </template>
     </n-thing>
   </n-list-item>
@@ -84,10 +78,6 @@ const handleResend = (msg: ConversationMsgResponse) => {
 </script>
 
 <style scoped>
-.chat-avatar {
-  /* 可以在这里添加头像的特定样式 */
-}
-
 /* 消息项布局样式可以根据需要调整 */
 :deep(.box-left .n-list-item__prefix) {
   margin-right: 15px !important;

@@ -62,9 +62,10 @@ export const uploadFile = async (file: File, tmpId: string): Promise<UploadRespo
  */
 export const downloadFileById = async (fileId: string): Promise<void> => {
   try {
+    message.loading('正在下载')
     const response = await blobClient.get('/download?id=' + fileId, {
       responseType: 'blob',
-      timeout: 60000 // 增加超时时间，适应大文件下载
+      timeout: 60000
     })
     
     // 从响应头里获取文件名
@@ -94,10 +95,9 @@ export const downloadFileById = async (fileId: string): Promise<void> => {
     setTimeout(() => {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-      message.success('文件开始下载')
     }, 100)
   } catch (err) {
-    message.error('文件下载失败: ' + (err as Error)?.message || '未知错误')
+    message.error('文件下载失败!' + (err as Error)?.message || '未知错误')
     throw err
   }
 }

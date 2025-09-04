@@ -93,35 +93,39 @@ onMounted(async () => {
   // 监听新消息和消息状态变化
   if (wsService.value) {
     watch(
-      () => wsService.value?.messages,
-      (newMessages) => {
-        if (newMessages && newMessages.length > 0) {
-          // 分离状态更新消息和新消息
-          const updatedMessages = newMessages.filter(msg => 
-            msg.send === authUser.id && 
-            (msg.status === 'success' || msg.status === 'failed')
-          );
+      () => wsService,
+      (service) => {
+        if (service.value && service.value.messages) {
+          const newMessages = service.value.messages
+          if (newMessages && newMessages.length > 0) {
+            // 分离状态更新消息和新消息
+            const updatedMessages = newMessages.filter(msg => 
+              msg.send === authUser.id && 
+              (msg.status === 'success' || msg.status === 'failed')
+            );
 
-          // 处理所有新消息
-          const relevantMessages = newMessages.filter(msg => 
-            props.conversation && (msg.send === props.conversation.targetUserId || msg.receiver === props.conversation.targetUserId)
-          );
+            // 处理所有新消息
+            const relevantMessages = newMessages.filter(msg => 
+              props.conversation && (msg.send === props.conversation.targetUserId || msg.receiver === props.conversation.targetUserId)
+            );
 
-          // 先处理状态更新
-          if (updatedMessages.length > 0) {
-            updateConversationMap(updatedMessages);
-          }
+            // 先处理状态更新
+            if (updatedMessages.length > 0) {
+              updateConversationMap(updatedMessages);
+            }
 
-          // 再处理新消息
-          if (relevantMessages.length > 0) {
-            updateConversationMap(relevantMessages);
-          }
+            // 再处理新消息
+            if (relevantMessages.length > 0) {
+              updateConversationMap(relevantMessages);
+            }
 
-          // 有新消息就滚动到底部
-          if (updatedMessages.length > 0 || relevantMessages.length > 0) {
-            scrollToBottom();
+            // 有新消息就滚动到底部
+            if (updatedMessages.length > 0 || relevantMessages.length > 0) {
+              scrollToBottom();
+            }
           }
         }
+
       },
       { deep: true }
     )
