@@ -260,7 +260,7 @@ const downloadFile = (msg: ConversationMsgResponse) => {
 .file-card:hover {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
-  background: #e2e8f0;
+  background: #f8fafc;
 }
 
 .file-icon-wrapper {

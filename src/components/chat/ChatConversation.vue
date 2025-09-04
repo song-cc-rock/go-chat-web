@@ -67,7 +67,10 @@ import WebSocketService from '@/utils/websocket'
 import { VerticalAlignBottomOutlined as BackBottomIcon, HistoryOutlined as HistoryIcon } from '@vicons/antd'
 import eventBus from '@/utils/eventBus'
 import ChatMessageItem from '@/components/chat/ChatMessageItem.vue'
+import { useMessage } from 'naive-ui'
+import { downloadFileById } from '@/api/file'
 
+const message = useMessage()
 const props = defineProps<{
   conversation: ConversationResponse | undefined;
 }>();
@@ -447,17 +450,10 @@ const getLastConversationTime = (time: number) => {
 
 // 下载文件
 const downloadFile = (msg: ConversationMsgResponse) => {
-  if (msg.fileInfo && msg.fileInfo.path) {
-    // 创建临时链接并触发下载
-    const link = document.createElement('a')
-    link.href = msg.fileInfo.path
-    link.download = msg.fileInfo.name || '下载文件'
-    link.target = '_blank'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  if (msg.fileInfo && msg.fileInfo.id) {
+    downloadFileById(msg.fileInfo.id);
   } else {
-    console.error('文件信息不完整，无法下载')
+    message.error('无法下载, 文件已经过时!')
   }
 }
 
