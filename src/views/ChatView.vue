@@ -7,11 +7,20 @@
             <n-icon :component="SearchIcon" />
           </template>
         </n-input>
-        <n-button type="tertiary" size="small" class="plus-btn">
-          <template #icon>
-            <n-icon><PlusIcon /></n-icon>
-          </template>
-        </n-button>
+        <n-dropdown
+          trigger="click"
+          :options="options"
+          :show-arrow="true"
+          size="medium"
+          :icon-size="30"
+          @select="handleSelect"
+        >
+          <n-button type="tertiary" size="small" class="plus-btn">
+            <template #icon>
+              <n-icon><PlusIcon /></n-icon>
+            </template>
+          </n-button>
+        </n-dropdown>
       </div>
       <chat-user-list 
         :chat-user-list="conversations"
@@ -27,22 +36,61 @@
       </div>
     </template>
   </n-split>
+  <!-- 使用添加好友弹窗组件 -->
+  <AddFriendDialog v-model:show="showAddFriendDialog" />
 </template>
 
 <script setup lang="ts">
-import { SearchOutlined as SearchIcon, PlusOutlined as PlusIcon, WechatOutlined as WechatIcon} from '@vicons/antd'
+import { SearchOutlined as SearchIcon, PlusOutlined as PlusIcon, WechatOutlined as WechatIcon, 
+  UserAddOutlined as UserAddIcon
+} from '@vicons/antd'
 import ChatUserList from '@/components/chat/ChatUserList.vue'
 import ChatContainer from '@/components/ChatContainer.vue'
+import AddFriendDialog from '@/components/chat/AddFriendDialog.vue'
 import { onMounted, ref, watch, inject, type Ref, onUnmounted } from 'vue'
 import { getConversationList, clearConversationUnreadCount } from '@/api/conversation.ts'
 import { getAuthUser } from '@/utils/auth.ts'
-import type { ConversationResponse, ConversationMsgResponse } from '@/models/conversation.ts'
+import type { ConversationResponse } from '@/models/conversation.ts'
 import WebSocketService from '@/utils/websocket.ts'
 import eventBus from '@/utils/eventBus.ts'
+import { NIcon } from 'naive-ui'
+import { h } from 'vue'
 
 const authUser = getAuthUser()
 const conversations = ref<ConversationResponse[]>()
 const selectedConversation = ref<ConversationResponse>()
+
+const renderIcon = (icon: Component) => {
+  return () => {
+    return h(NIcon, null, {
+      default: () => h(icon)
+    })
+  }
+}  
+
+const options = ref([
+  {
+    label: '添加朋友',
+    key: 'AddFriend',
+    icon: renderIcon(UserAddIcon)
+  },
+  {
+    label: '发起群聊',
+    key: 'StartGroupChat',
+    icon: renderIcon(UserAddIcon)
+  },
+])
+
+// 控制添加好友弹窗的显示状态
+const showAddFriendDialog = ref(false)
+
+const handleSelect = (key: string) => {
+  if (key === 'AddFriend') {
+    showAddFriendDialog.value = true
+  } else if (key === 'StartGroupChat') {
+    // 处理发起群聊
+  }
+}
 
 // 注入WebSocket服务
 const wsService = inject<Ref<WebSocketService | null>>('wsService', ref(null))
@@ -99,7 +147,10 @@ onUnmounted(() => {
 })
 </script>
 
+
+
 <style scoped>
+/* 现有样式保持不变 */
 .search-input {
   background-color: white;
   padding: 12px;
