@@ -16,7 +16,7 @@
         <n-input
           v-model:value="keyword"
           placeholder="请输入邮箱或昵称搜索"
-          clearable="true"
+          :clearable="true"
           @keypress="handleKeyPress">
           <template #prefix>
             <n-icon :component="UserAddIcon" />
