@@ -22,3 +22,13 @@ export interface AuthUser {
   mail: string;
   phone: string;
 }
+
+// 搜索用户
+export interface SearchUserItem {
+  id: string
+  name: string
+  avatar: string
+  nickName: string
+  mail: string
+  phone: string
+}

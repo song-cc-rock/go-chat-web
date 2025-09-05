@@ -36,7 +36,7 @@
       </div>
     </template>
   </n-split>
-  <!-- 使用添加好友弹窗组件 -->
+  <!-- 只有在需要时才渲染添加好友弹窗组件 -->
   <AddFriendDialog v-model:show="showAddFriendDialog" />
 </template>
 
@@ -59,6 +59,7 @@ import { h } from 'vue'
 const authUser = getAuthUser()
 const conversations = ref<ConversationResponse[]>()
 const selectedConversation = ref<ConversationResponse>()
+const showAddFriendDialog = ref(false)
 
 const renderIcon = (icon: Component) => {
   return () => {
@@ -77,12 +78,10 @@ const options = ref([
   {
     label: '发起群聊',
     key: 'StartGroupChat',
-    icon: renderIcon(UserAddIcon)
+    icon: renderIcon(WechatIcon)
   },
 ])
 
-// 控制添加好友弹窗的显示状态
-const showAddFriendDialog = ref(false)
 
 const handleSelect = (key: string) => {
   if (key === 'AddFriend') {
