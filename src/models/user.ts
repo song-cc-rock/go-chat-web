@@ -31,4 +31,5 @@ export interface SearchUserItem {
   nickName: string
   mail: string
   phone: string
+  status: string
 }

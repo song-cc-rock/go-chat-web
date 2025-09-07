@@ -48,14 +48,29 @@
                   <div class="user-email">{{ searchResult.mail }}</div>
                 </div>
                 <div class="user-action">
-                  <n-button
-                    type="primary"
-                    size="small"
-                    @click="addFriend(searchResult.id)"
-                    :loading="addFriendLoading"
-                    class="add-btn">
-                    添加
-                  </n-button>
+                  <n-tooltip trigger="hover">
+                    <template #trigger>
+                      <n-button
+                        v-if="searchResult.status === 'not-applied'"
+                        type="primary"
+                        size="small"
+                        @click="addFriend(searchResult.id)"
+                        :loading="addFriendLoading"
+                        class="add-btn">
+                        {{ '好友申请' }}
+                      </n-button>
+                      <n-tag
+                        v-else
+                        :type="statusMap[searchResult.status].type"
+                        size="medium"
+                        round
+                        :bordered="false"
+                        class="status-tag">
+                        {{ statusMap[searchResult.status].text }}
+                      </n-tag>
+                    </template>
+                    <span>{{ statusMap[searchResult.status].tooltip }}</span>
+                  </n-tooltip>
                 </div>
               </div>
             </div>
@@ -80,7 +95,7 @@
 import { ref, watch } from 'vue'
 import { searchUsers, sendFriendRequest } from '@/api/user.ts'
 import type { SearchUserItem } from '@/models/user'
-import { useMessage } from 'naive-ui'
+import { useMessage, NTooltip } from 'naive-ui'
 import { UserAddOutlined as UserAddIcon } from '@vicons/antd'
 import { getAuthUser } from '@/utils/auth'
 
@@ -112,12 +127,20 @@ const handleSearchUsers = async () => {
   hasSearched.value = true
   try {
     searchResult.value = await searchUsers(keyword.value)
+    // 状态字段会从后端返回，不需要前端初始化
   } catch (error) {
     message.error('搜索失败，请稍后重试')
     console.log(error);
   } finally {
     searchLoading.value = false
   }
+}
+
+// 好友申请状态映射
+const statusMap: Record<string, { text: string; type: 'info' | 'error' | 'success'; tooltip: string }> = {
+  'pending': { text: '待通过', type: 'info', tooltip: '好友申请已发送，等待对方通过' },
+  'rejected': { text: '已拒绝', type: 'error', tooltip: '对方已拒绝您的好友申请，请1小时后重新申请' },
+  'approved': { text: '已通过', type: 'success', tooltip: '你们已是好友关系' }
 }
 
 // 添加好友的函数
@@ -231,6 +254,14 @@ const onAfterLeave = () => {
   padding: 8px;
 }
 
+.add-btn {
+  font-weight: bold;
+}
+
+.status-tag {
+  font-weight: bold;
+}
+
 .user-item {
   display: flex;
   align-items: center;
@@ -286,6 +317,15 @@ const onAfterLeave = () => {
   height: 32px;
   font-size: 13px;
   border-radius: 6px;
+}
+
+.status-tag {
+  min-width: 60px;
+  font-size: 13px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .status-container {
