@@ -51,7 +51,7 @@
                   <n-button
                     type="primary"
                     size="small"
-                    @click="addFriend(searchResult.id, searchResult.name)"
+                    @click="addFriend(searchResult.id)"
                     :loading="addFriendLoading"
                     class="add-btn">
                     添加
@@ -82,6 +82,7 @@ import { searchUsers, sendFriendRequest } from '@/api/user.ts'
 import type { SearchUserItem } from '@/models/user'
 import { useMessage } from 'naive-ui'
 import { UserAddOutlined as UserAddIcon } from '@vicons/antd'
+import { getAuthUser } from '@/utils/auth'
 
 defineProps({
   show: {
@@ -98,6 +99,7 @@ const searchResult = ref<SearchUserItem>()
 const searchLoading = ref(false)
 const addFriendLoading = ref(false)
 const hasSearched = ref(false) // 标记是否已经触发过搜索
+const authUser = getAuthUser()
 
 // 搜索用户的函数
 const handleSearchUsers = async () => {
@@ -119,18 +121,19 @@ const handleSearchUsers = async () => {
 }
 
 // 添加好友的函数
-const addFriend = async (userId: string, userName: string) => {
+const addFriend = async (userId: string) => {
   addFriendLoading.value = true
   try {
-    // 调用真实的发送好友请求API
-    const response = await sendFriendRequest(userId)
-    
-    if (response.success) {
-      message.success(response.message || `已发送好友请求给 ${userName}`)
-      // 关闭弹窗
-      emit('update:show', false)
+    var friendApply = {
+      fromId: authUser.id,
+      toId: userId,
+      createdAt: Date.now()
+    }
+    const success = await sendFriendRequest(friendApply)
+    if (success) {
+      message.success(`已发送好友请求`)
     } else {
-      message.warning(response.message || '添加好友失败')
+      message.warning('添加好友失败')
     }
   } catch (error) {
     message.error('添加好友失败，请稍后重试')
