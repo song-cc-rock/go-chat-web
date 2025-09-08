@@ -7,7 +7,7 @@
             <n-icon :component="SearchIcon" />
           </template>
         </n-input>
-        <n-button type="tertiary" size="small" class="plus-btn">
+        <n-button type="tertiary" size="small" class="plus-btn" @click="showFriendRequests = true">
           <template #icon>
             <n-icon><GroupAddIcon /></n-icon>
           </template>
@@ -20,11 +20,15 @@
       <contact-user-detail :current-user="contactUser" v-else-if="contactUser && contactUser.type === 'user'"/>
     </template>
   </n-split>
+  
+  <!-- 好友申请列表弹窗 -->
+  <friend-request-list v-model:show="showFriendRequests" />
 </template>
 
 
 <script setup lang="ts">
 import ContactUserList from '@/components/contact/ContactUserList.vue'
+import FriendRequestList from '@/components/contact/FriendRequestList.vue'
 import type { Group } from '@/models/group';
 import type { ContactUser } from '@/models/user';
 import { SearchOutlined as SearchIcon, UsergroupAddOutlined as GroupAddIcon} from '@vicons/antd'
@@ -33,6 +37,7 @@ import ContactGroupDetail from '@/components/contact/ContactGroupDetail.vue'
 import ContactUserDetail from '@/components/contact/ContactUserDetail.vue'
 
 const contactUser = ref<ContactUser|Group>()
+const showFriendRequests = ref(false)
 
 const setCurrentContact = (user: ContactUser|Group) => {
   contactUser.value = user

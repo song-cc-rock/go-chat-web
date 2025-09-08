@@ -254,10 +254,6 @@ const onAfterLeave = () => {
   padding: 8px;
 }
 
-.add-btn {
-  font-weight: bold;
-}
-
 .status-tag {
   font-weight: bold;
 }
