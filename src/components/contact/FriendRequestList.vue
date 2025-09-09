@@ -453,6 +453,7 @@ watch(() => props.show, (newShow) => {
   align-items: center;
   justify-content: flex-end;
   min-width: 140px;
+  margin-top: 10px;
 }
 
 .action-buttons {
@@ -464,7 +465,7 @@ watch(() => props.show, (newShow) => {
 .status-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   justify-content: center;
 }
 
@@ -483,11 +484,37 @@ watch(() => props.show, (newShow) => {
   height: 32px;
   border-radius: 6px;
   color: #999;
+  transition: all 0.3s ease;
 }
 
 .delete-btn:hover {
   color: #ff4d4f;
   background-color: #fff1f0;
+  transform: scale(1.1);
+}
+
+/* 操作按钮样式 */
+.status-actions :deep(.n-button) {
+  transition: all 0.3s ease;
+  border-radius: 20px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-actions :deep(.n-button:hover) {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.status-actions :deep(.n-button.text.primary:hover) {
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+.status-actions :deep(.n-button.text.error:hover) {
+  background-color: rgba(255, 77, 79, 0.1);
 }
 
 /* 标签页切换动画 */
