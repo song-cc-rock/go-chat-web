@@ -81,6 +81,35 @@
                     </n-tag>
                   </div>
                   
+                  <!-- 接收到的申请状态区域 -->
+                  <div class="user-action" v-else-if="activeTab === 'received'">
+                    <div v-if="isRequestExpired(item.createdAt)">
+                      <n-tag type="default" size="medium" round :bordered="false" class="status-tag">
+                        已失效
+                      </n-tag>
+                    </div>
+                    <div v-else class="status-actions">
+                      <template v-if="item.status === 'pending'">
+                        <n-button text type="primary" size="medium" @click="handleApprove(item.id)">
+                          <n-icon :component="CheckOutlined" size="20" />
+                        </n-button>
+                        <n-button text type="error" size="medium" @click="handleReject(item.id)">
+                          <n-icon :component="CloseOutlined" size="20" />
+                        </n-button>
+                      </template>
+                      <template v-else-if="item.status === 'rejected'">
+                        <n-tag type="error" size="medium" round :bordered="false" class="status-tag">
+                          已拒绝
+                        </n-tag>
+                      </template>
+                      <template v-else-if="item.status === 'approved'">
+                        <n-tag type="success" size="medium" round :bordered="false" class="status-tag">
+                          已同意
+                        </n-tag>
+                      </template>
+                    </div>
+                  </div>
+                  
                 </div>
               </template>
             </n-virtual-list>
@@ -101,13 +130,13 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useMessage } from 'naive-ui'
 import type { FriendRequest } from '@/models/friend'
 import { InfoCircleOutlined as InfoIcon } from '@vicons/antd'
-import { getApplies } from '@/api/friend'
-import { getAuthUser } from '@/utils/auth'
+import { CheckOutlined, CloseOutlined } from '@vicons/antd'
+import { getApplies, getAccepts, handleFriendRequest } from '@/api/friend'
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
+import { getAuthUser } from '@/utils/auth'
 
 // Props定义
 const props = defineProps({
@@ -121,7 +150,6 @@ const props = defineProps({
 const emit = defineEmits<{(e: 'update:show', value: boolean): void}>()
 
 // 响应式数据
-const message = useMessage()
 const activeTab = ref<'received' | 'sent'>('sent')
 const loading = ref(false)
 const friendRequests = ref<FriendRequest[]>([])
@@ -141,6 +169,62 @@ const formatTime = (timestamp: number) => {
     })
   } catch {
     return '刚刚'
+  }
+}
+
+// 判断申请是否过期（超过7天）
+const isRequestExpired = (createdAt: number): boolean => {
+  const now = Date.now()
+  const createdTime = createdAt * 1000 // 转换为毫秒
+  const sevenDaysInMillis = 7 * 24 * 60 * 60 * 1000
+  return (now - createdTime) > sevenDaysInMillis
+}
+
+// 处理同意申请
+const handleApprove = async (requestId: string) => {
+  try {
+    const currentUser = getAuthUser()
+    if (!currentUser) {
+      console.error('无法获取当前用户信息')
+      return
+    }
+    
+    const success = await handleFriendRequest({
+      requestId,
+      action: 'approve',
+      userId: currentUser.id
+    })
+    
+    if (success) {
+      // 重新加载数据以更新状态
+      await loadReceivedRequests()
+    }
+  } catch (error) {
+    console.error('处理同意申请失败:', error)
+  }
+}
+
+// 处理拒绝申请
+const handleReject = async (requestId: string) => {
+  try {
+    const currentUser = getAuthUser()
+    if (!currentUser) {
+      console.error('无法获取当前用户信息')
+      return
+    }
+    
+    const success = await handleFriendRequest({
+      requestId,
+      action: 'reject',
+      userId: currentUser.id
+    })
+    
+    if (success) {
+      // 重新加载数据以更新状态
+      await loadReceivedRequests()
+    }
+  } catch (error) {
+    console.error('处理拒绝申请失败:', error)
   }
 }
 
@@ -168,7 +252,7 @@ const loadSendRequests = async () => {
   try {
     friendRequests.value = await getApplies()
   } catch (error) {
-    console.error('获取发出的申请失败:', error)
+    console.error('获取发出的申请失败: ', error)
   } finally {
     loading.value = false
   }
@@ -177,9 +261,9 @@ const loadSendRequests = async () => {
 const loadReceivedRequests = async () => {
   loading.value = true
   try {
-    receivedRequests.value = []
+    receivedRequests.value = await getAccepts()
   } catch (error) {
-    message.error('获取收到的申请失败')
+    console.error('获取收到的申请失败: ', error)
   } finally {
     loading.value = false
   }
@@ -195,7 +279,7 @@ const loadDataByTab = () => {
 
 const handleTabChange = (value: string) => {
   activeTab.value = value as 'received' | 'sent'
-  loadDataByTab() // 切换Tab时加载对应数据
+  loadDataByTab()
 }
 
 const handleClose = () => {
@@ -381,7 +465,7 @@ watch(() => props.show, (newShow) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .status-tag {
@@ -455,9 +539,7 @@ watch(() => props.show, (newShow) => {
 }
 </style>
 
-<!-- 全局样式优化 -->
 <style>
-/* 优化标签页样式 */
 :deep(.n-tabs .n-tabs-nav) {
   background-color: #f8f9fa !important;
   border-radius: 8px !important;
