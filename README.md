@@ -11,6 +11,12 @@
    ![group](./public/assets/group.jpg)
    ![friend](./public/assets/friend.jpg)
 
+4. ###### Add friend page
+   ![add-friend](./public/assets/add-friend.png)
+
+4. ###### Request list page
+   ![request-list](./public/assets/request-list.png)
+
 ## Project Setup
 
 ```sh
