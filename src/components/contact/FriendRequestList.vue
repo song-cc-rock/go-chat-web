@@ -3,7 +3,7 @@
     :show="show"
     @update:show="$emit('update:show', $event)"
     preset="dialog"
-    title="好友申请"
+    title="申请列表"
     :mask-closable="true"
     :close-on-esc="true"
     :auto-focus="false"
@@ -15,10 +15,10 @@
       <div class="tab-container">
         <n-tabs v-model:value="activeTab" type="line" @update:value="handleTabChange">
           <n-tab name="sent">
-            发出的申请
+            发出
           </n-tab>
           <n-tab name="received">
-            收到的申请
+            收到
           </n-tab>
         </n-tabs>
       </div>
@@ -37,34 +37,60 @@
           
           <!-- 申请列表 -->
           <div v-else-if="currentRequests.length > 0" key="request-list" class="request-list">
-            <div 
-              v-for="request in currentRequests" 
-              :key="request.id" 
-              class="request-item"
-              :class="{ 'processed': request.status !== 'pending' }"
-            >
-              <div class="user-avatar">
-                <n-avatar :src="getDisplayUser(request).avatar" round />
-              </div>
-              
-              <div class="user-info">
-                <div class="user-name">{{ getDisplayUser(request).name }}</div>
-                <div class="user-email">{{ getDisplayUser(request).email }}</div>
-                <div v-if="request.message" class="request-message">
-                  {{ request.message }}
+            <n-virtual-list style="max-height: 240px" :item-size="42" item-resizable :items="currentRequests">
+              <template #default="{ item }">
+                <div class="request-item" :key="item.id"> 
+                  <div class="user-avatar">
+                    <n-avatar :src="item.avatar" round />
+                  </div>
+                  
+                  <div class="user-info">
+                    <div class="user-name-row">
+                      <span class="user-name">{{ item.name }}</span>
+                      <n-popover v-if="item.message" trigger="hover" :show-arrow="false">
+                        <template #trigger>
+                          <n-tag 
+                            round 
+                            :bordered="false" 
+                            type="success" 
+                            size="small"
+                            class="verification-tag">
+                            消息
+                            <template #icon>
+                              <n-icon :component="InfoIcon" size="14" />
+                            </template>
+                          </n-tag>
+                        </template>
+                        <span>{{ item.message }}</span>
+                      </n-popover>
+                    </div>
+                    <div class="request-time">
+                      {{ formatTime(item.createdAt * 1000) }}
+                    </div>
+                  </div>
+                  
+                  <!-- 状态标签区域 -->
+                  <div class="user-action" v-if="activeTab === 'sent' && item.status">
+                    <n-tag
+                      :type="getStatusType(item.status)"
+                      size="medium"
+                      round
+                      :bordered="false"
+                      class="status-tag">
+                      {{ getStatusText(item.status) }}
+                    </n-tag>
+                  </div>
+                  
                 </div>
-                <div class="request-time">
-                  {{ formatTime(request.createdAt) }}
-                </div>
-              </div>
-            </div>
+              </template>
+            </n-virtual-list>
           </div>
           
           <!-- 空状态 -->
           <div v-else key="empty-state" class="status-container">
             <n-result 
               status="404" 
-              :description="activeTab === 'received' ? '暂无收到的好友申请' : '暂无发出的好友申请'"
+              :description="activeTab === 'received' ? '暂无收到的申请' : '暂无发出的申请'"
             />
           </div>
         </transition>
@@ -77,6 +103,7 @@
 import { ref, computed, watch } from 'vue'
 import { useMessage } from 'naive-ui'
 import type { FriendRequest } from '@/models/friend'
+import { InfoCircleOutlined as InfoIcon } from '@vicons/antd'
 import { getApplies } from '@/api/friend'
 import { getAuthUser } from '@/utils/auth'
 import { formatDistanceToNow } from 'date-fns'
@@ -106,17 +133,6 @@ const currentRequests = computed(() => {
   return activeTab.value === 'sent' ? friendRequests.value : receivedRequests.value
 })
 
-// 方法：获取显示用户信息
-const getDisplayUser = (request: FriendRequest) => {
-  // 根据当前数据结构，直接返回申请中的用户信息
-  return {
-    name: request.name || '未知用户',
-    email: request.email || '',
-    avatar: request.avatar || ''
-  }
-}
-
-// 方法：格式化时间
 const formatTime = (timestamp: number) => {
   try {
     return formatDistanceToNow(new Date(timestamp), { 
@@ -128,7 +144,25 @@ const formatTime = (timestamp: number) => {
   }
 }
 
-// 方法：加载发出的好友申请
+// 状态映射方法
+const getStatusType = (status: string): 'info' | 'error' | 'success' => {
+  switch (status) {
+    case 'pending': return 'info'
+    case 'rejected': return 'error'
+    case 'approved': return 'success'
+    default: return 'info'
+  }
+}
+
+const getStatusText = (status: string): string => {
+  switch (status) {
+    case 'pending': return '待通过'
+    case 'rejected': return '已拒绝'
+    case 'approved': return '已通过'
+    default: return '未知状态'
+  }
+}
+
 const loadSendRequests = async () => {
   loading.value = true
   try {
@@ -140,12 +174,10 @@ const loadSendRequests = async () => {
   }
 }
 
-// 方法：加载收到的好友申请
 const loadReceivedRequests = async () => {
   loading.value = true
   try {
-    // 这里需要根据实际API调整，可能需要传参数或调用不同API
-    receivedRequests.value = await getApplies() // 暂时使用同一个API
+    receivedRequests.value = []
   } catch (error) {
     message.error('获取收到的申请失败')
   } finally {
@@ -161,19 +193,15 @@ const loadDataByTab = () => {
   }
 }
 
-
-// 方法：标签页切换
 const handleTabChange = (value: string) => {
   activeTab.value = value as 'received' | 'sent'
   loadDataByTab() // 切换Tab时加载对应数据
 }
 
-// 方法：关闭对话框
 const handleClose = () => {
   emit('update:show', false)
 }
 
-// 监听：show属性变化，每次打开时重新加载数据
 watch(() => props.show, (newShow) => {
   if (newShow) {
     loadDataByTab()
@@ -213,30 +241,27 @@ watch(() => props.show, (newShow) => {
   max-height: 320px;
   overflow-y: auto;
   border-radius: 8px;
-  padding: 8px;
+  padding: 8px 8px 16px 8px;
 }
 
 .request-item {
   display: flex;
-  align-items: center;
-  padding: 8px 16px;
+  align-items: flex-start;
+  padding: 12px 16px;
   margin-bottom: 8px;
   border: 1px solid #f0f0f0;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   background: #fafafa;
-}
-
-.request-item:last-child {
-  margin-bottom: 0;
+  min-height: auto;
+  position: relative;
+  isolation: isolate;
 }
 
 .request-item:hover {
-  background-color: #f8f9fa;
-  border-color: #e6f7ff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background-color: #f8f9fa !important;
+  border-color: #e6f7ff !important;
 }
 
 .request-item.processed {
@@ -246,18 +271,52 @@ watch(() => props.show, (newShow) => {
 .user-avatar {
   margin-right: 12px;
   flex-shrink: 0;
+  align-self: center;
 }
 
-.request-info {
+.user-info {
   flex: 1;
   min-width: 0;
+  padding-top: 2px;
+}
+
+.user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
 }
 
 .user-name {
   font-size: 14px;
   font-weight: 500;
   color: #333;
-  margin-bottom: 2px;
+}
+
+.verification-message {
+  font-size: 11px;
+  color: #1890ff;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(24, 144, 255, 0.1);
+  border: 1px solid rgba(24, 144, 255, 0.2);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+}
+
+.verification-message:hover {
+  background: rgba(24, 144, 255, 0.15) !important;
+  border-color: rgba(24, 144, 255, 0.3) !important;
+  transform: scale(1.05);
+}
+
+.verification-tag {
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .user-email {
@@ -282,6 +341,25 @@ watch(() => props.show, (newShow) => {
   font-weight: 400;
   color: rgb(185, 185, 185);
   margin-top: 2px;
+}
+
+.user-action {
+  margin-left: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 80px;
+}
+
+.status-tag {
+  min-width: 60px;
+  font-size: 13px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
 }
 
 .user-action {
@@ -396,12 +474,11 @@ watch(() => props.show, (newShow) => {
   width: 40px !important;
   height: 40px !important;
   border: 2px solid #f0f0f0 !important;
-  transition: all 0.2s ease !important;
+  transition: border-color 0.2s ease !important;
 }
 
 :deep(.request-item:hover .n-avatar) {
   border-color: #1890ff !important;
-  transform: scale(1.05) !important;
 }
 
 /* 优化模态框样式 */
@@ -422,5 +499,17 @@ watch(() => props.show, (newShow) => {
   font-weight: 300 !important;
   color: #aaa !important;
   opacity: 0.8;
+}
+
+.verification-tag .n-tag__content {
+  margin-top: 2px;
+}
+
+.request-list .v-vl {
+  margin-right: 16px;
+}
+
+.request-list .v-vl-items {
+  padding-bottom: 1px!important;
 }
 </style>

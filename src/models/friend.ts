@@ -4,12 +4,10 @@ export interface FriendApply {
   createdAt: number
 }
 
-
 export interface FriendRequest {
   id: string
   name: string
   avatar: string
-  email: string
   message?: string
   status: string
   createdAt: number
