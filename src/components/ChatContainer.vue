@@ -327,7 +327,7 @@ const fileUpload = async (file: File) => {
     eventBus.emit('messageSent')
   } catch (error) {
     console.error('File upload failed:', error);
-    message.error('文件上传失败，请重试');
+    // require.ts已经处理了错误提示，这里不再重复显示
   }
 };
 

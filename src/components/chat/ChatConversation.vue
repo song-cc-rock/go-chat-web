@@ -457,6 +457,7 @@ const downloadFile = (msg: ConversationMsgResponse) => {
   if (msg.fileInfo && msg.fileInfo.id) {
     downloadFileById(msg.fileInfo.id);
   } else {
+    // 这是业务逻辑验证错误，保留message提示
     message.error('无法下载, 文件已经过时!')
   }
 }

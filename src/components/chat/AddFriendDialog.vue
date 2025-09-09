@@ -164,8 +164,8 @@ const handleSearchUsers = async () => {
   try {
     searchResult.value = await searchUsers(keyword.value)
   } catch (error) {
-    message.error('搜索失败，请稍后重试')
-    console.log(error);
+    // require.ts已经处理了错误提示，这里不再重复显示
+    console.error('搜索失败:', error)
   } finally {
     searchLoading.value = false
   }
@@ -215,7 +215,8 @@ const addFriend = async (userId: string) => {
     }
   } catch (error) {
     applyDisabled.value = false
-    message.error('添加好友失败，请稍后重试')
+    // require.ts已经处理了错误提示，这里不再重复显示
+    console.error('添加好友失败:', error)
   } finally {
     addFriendLoading.value = false
   }

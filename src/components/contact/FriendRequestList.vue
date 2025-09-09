@@ -14,11 +14,11 @@
       <!-- 标签页切换 -->
       <div class="tab-container">
         <n-tabs v-model:value="activeTab" type="line" @update:value="handleTabChange">
-          <n-tab name="received" :tab="receivedTabTitle">
-            收到的申请
-          </n-tab>
-          <n-tab name="sent" :tab="sentTabTitle">
+          <n-tab name="sent">
             发出的申请
+          </n-tab>
+          <n-tab name="received">
+            收到的申请
           </n-tab>
         </n-tabs>
       </div>
@@ -57,56 +57,6 @@
                   {{ formatTime(request.createdAt) }}
                 </div>
               </div>
-              
-              <div class="user-action">
-                <!-- 待处理的收到申请 -->
-                <div v-if="activeTab === 'received' && request.status === 'pending'" class="action-buttons">
-                  <n-button
-                    type="primary"
-                    size="small"
-                    @click="handleRequest(request.id, 'approve')"
-                    :loading="processingRequestId === request.id"
-                  >
-                    同意
-                  </n-button>
-                  <n-button
-                    type="error"
-                    size="small"
-                    @click="handleRequest(request.id, 'reject')"
-                    :loading="processingRequestId === request.id"
-                  >
-                    拒绝
-                  </n-button>
-                </div>
-                
-                <!-- 状态标签和删除按钮 -->
-                <div v-else class="status-actions">
-                  <n-tag
-                    :type="getStatusTagType(request.status)"
-                    size="medium"
-                    round
-                    :bordered="false"
-                    class="status-tag"
-                  >
-                    {{ getStatusText(request.status) }}
-                  </n-tag>
-                  
-                  <!-- 删除按钮 -->
-                  <n-button
-                    v-if="request.status !== 'pending'"
-                    type="tertiary"
-                    size="small"
-                    @click="deleteRequest(request.id)"
-                    :loading="deletingRequestId === request.id"
-                    class="delete-btn"
-                    title="删除记录"
-                  >
-                    <template #icon>
-                      <n-icon><DeleteIcon /></n-icon>
-                    </template>
-                  </n-button>
-                </div>
-              </div>
             </div>
           </div>
           
@@ -124,11 +74,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useMessage } from 'naive-ui'
-import { DeleteOutlined as DeleteIcon } from '@vicons/antd'
 import type { FriendRequest } from '@/models/friend'
-import { getMockFriendRequests, handleMockFriendRequest, deleteMockFriendRequest } from '@/mock/friendRequests'
+import { getApplies } from '@/api/friend'
 import { getAuthUser } from '@/utils/auth'
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -146,40 +95,25 @@ const emit = defineEmits<{(e: 'update:show', value: boolean): void}>()
 
 // 响应式数据
 const message = useMessage()
-const activeTab = ref<'received' | 'sent'>('received')
+const activeTab = ref<'received' | 'sent'>('sent')
 const loading = ref(false)
-const processingRequestId = ref<string | null>(null)
-const deletingRequestId = ref<string | null>(null)
 const friendRequests = ref<FriendRequest[]>([])
-const authUser = getAuthUser()
+const receivedRequests = ref<FriendRequest[]>([])
 
-// 计算属性：获取当前标签页的申请列表
+
+// 计算属性：当前显示的申请列表
 const currentRequests = computed(() => {
-  return friendRequests.value.filter(request => request.type === activeTab.value)
+  return activeTab.value === 'sent' ? friendRequests.value : receivedRequests.value
 })
 
-// 计算属性：收到的申请数量（待处理）
-const receivedCount = computed(() => {
-  return friendRequests.value.filter(req => req.type === 'received' && req.status === 'pending').length
-})
-
-// 计算属性：发出的申请数量
-const sentCount = computed(() => {
-  return friendRequests.value.filter(req => req.type === 'sent').length
-})
-
-// 计算属性：标签标题
-const receivedTabTitle = computed(() => {
-  return receivedCount.value > 0 ? `收到的申请 (${receivedCount.value})` : '收到的申请'
-})
-
-const sentTabTitle = computed(() => {
-  return sentCount.value > 0 ? `发出的申请 (${sentCount.value})` : '发出的申请'
-})
-
-// 方法：获取要显示的用户信息
+// 方法：获取显示用户信息
 const getDisplayUser = (request: FriendRequest) => {
-  return activeTab.value === 'received' ? request.fromUser : request.toUser
+  // 根据当前数据结构，直接返回申请中的用户信息
+  return {
+    name: request.name || '未知用户',
+    email: request.email || '',
+    avatar: request.avatar || ''
+  }
 }
 
 // 方法：格式化时间
@@ -194,85 +128,44 @@ const formatTime = (timestamp: number) => {
   }
 }
 
-// 方法：获取状态标签类型
-const getStatusTagType = (status: string): 'info' | 'success' | 'error' => {
-  switch (status) {
-    case 'pending': return 'info'
-    case 'approved': return 'success'
-    case 'rejected': return 'error'
-    default: return 'info'
-  }
-}
-
-// 方法：获取状态文本
-const getStatusText = (status: string): string => {
-  switch (status) {
-    case 'pending': return '待处理'
-    case 'approved': return '已同意'
-    case 'rejected': return '已拒绝'
-    default: return '未知状态'
-  }
-}
-
-// 方法：加载好友申请列表
-const loadFriendRequests = async () => {
+// 方法：加载发出的好友申请
+const loadSendRequests = async () => {
   loading.value = true
   try {
-    // 这里使用Mock数据，实际项目中应该调用真实API
-    friendRequests.value = await getMockFriendRequests(authUser.id)
+    friendRequests.value = await getApplies()
   } catch (error) {
-    message.error('获取好友申请列表失败')
-    console.error('Load friend requests error:', error)
+    console.error('获取发出的申请失败:', error)
   } finally {
     loading.value = false
   }
 }
 
-// 方法：处理好友申请（同意/拒绝）
-const handleRequest = async (requestId: string, action: 'approve' | 'reject') => {
-  processingRequestId.value = requestId
+// 方法：加载收到的好友申请
+const loadReceivedRequests = async () => {
+  loading.value = true
   try {
-    // 这里使用Mock函数，实际项目中应该调用真实API
-    const success = await handleMockFriendRequest(requestId, action)
-    if (success) {
-      message.success(action === 'approve' ? '已同意好友申请' : '已拒绝好友申请')
-      // 刷新列表
-      await loadFriendRequests()
-    } else {
-      message.error('操作失败，请稍后重试')
-    }
+    // 这里需要根据实际API调整，可能需要传参数或调用不同API
+    receivedRequests.value = await getApplies() // 暂时使用同一个API
   } catch (error) {
-    message.error('操作失败，请稍后重试')
-    console.error('Handle friend request error:', error)
+    message.error('获取收到的申请失败')
   } finally {
-    processingRequestId.value = null
+    loading.value = false
   }
 }
 
-// 方法：删除申请记录
-const deleteRequest = async (requestId: string) => {
-  deletingRequestId.value = requestId
-  try {
-    // 这里使用Mock函数，实际项目中应该调用真实API
-    const success = await deleteMockFriendRequest(requestId)
-    if (success) {
-      message.success('已删除申请记录')
-      // 刷新列表
-      await loadFriendRequests()
-    } else {
-      message.error('删除失败，请稍后重试')
-    }
-  } catch (error) {
-    message.error('删除失败，请稍后重试')
-    console.error('Delete friend request error:', error)
-  } finally {
-    deletingRequestId.value = null
+const loadDataByTab = () => {
+  if (activeTab.value === 'sent') {
+    loadSendRequests()
+  } else {
+    loadReceivedRequests()
   }
 }
+
 
 // 方法：标签页切换
 const handleTabChange = (value: string) => {
   activeTab.value = value as 'received' | 'sent'
+  loadDataByTab() // 切换Tab时加载对应数据
 }
 
 // 方法：关闭对话框
@@ -280,17 +173,13 @@ const handleClose = () => {
   emit('update:show', false)
 }
 
-// 生命周期：组件挂载时加载数据
-onMounted(() => {
-  loadFriendRequests()
-})
-
 // 监听：show属性变化，每次打开时重新加载数据
 watch(() => props.show, (newShow) => {
   if (newShow) {
-    loadFriendRequests()
+    loadDataByTab()
   }
 }, { immediate: false })
+
 </script>
 
 <style scoped>
