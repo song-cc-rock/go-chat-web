@@ -2,14 +2,14 @@
 
 #### Page：
 1. ###### Login page
-   ![login](./public/assets/login.jpg)
+   ![login](./public/assets/login.png)
 
 2. ###### Chat page
    ![chat](./public/assets/chat.jpg)
 
 3. ###### Group/Friend page
-   ![group](./public/assets/group.jpg)
-   ![friend](./public/assets/friend.jpg)
+   ![group](./public/assets/group.png)
+   ![friend](./public/assets/friend.png)
 
 4. ###### Add friend page
    ![add-friend](./public/assets/add-friend.png)
