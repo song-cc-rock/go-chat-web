@@ -1,7 +1,7 @@
 <template>
   <n-modal
     :show="show"
-    @update:show="$emit('update:show', $event)"
+    @update:show="handleUpdateShow"
     preset="dialog"
     title="添加朋友"
     :mask-closable="true"
@@ -14,6 +14,7 @@
       <!-- 搜索框 -->
       <div class="search-box">
         <n-input
+          ref="inputRef"
           v-model:value="keyword"
           placeholder="请输入邮箱或昵称搜索"
           :clearable="true"
@@ -48,28 +49,30 @@
                   <div class="user-email">{{ searchResult.mail }}</div>
                 </div>
                 <div class="user-action">
-                  <n-tooltip trigger="hover">
+                  <n-button
+                    :disabled="applyDisabled"
+                    v-if="searchResult.status === 'not-applied'"
+                    type="primary"
+                    text 
+                    tag="a"
+                    @click="showApplyDialog(searchResult.id)"
+                    :loading="addFriendLoading">
+                    {{ '申请' }}
+                  </n-button>
+                  <n-tooltip trigger="hover" v-else>
                     <template #trigger>
-                      <n-button
-                        v-if="searchResult.status === 'not-applied'"
-                        type="primary"
-                        size="small"
-                        @click="addFriend(searchResult.id)"
-                        :loading="addFriendLoading"
-                        class="add-btn">
-                        {{ '好友申请' }}
-                      </n-button>
                       <n-tag
-                        v-else
-                        :type="statusMap[searchResult.status].type"
+                        :type="statusMap[searchResult.status]?.type || 'info'"
                         size="medium"
                         round
                         :bordered="false"
                         class="status-tag">
-                        {{ statusMap[searchResult.status].text }}
+                        {{ statusMap[searchResult.status]?.text }}
                       </n-tag>
                     </template>
-                    <span>{{ statusMap[searchResult.status].tooltip }}</span>
+                    <span>
+                      {{ statusMap[searchResult.status]?.tooltip}}
+                    </span>
                   </n-tooltip>
                 </div>
               </div>
@@ -88,18 +91,46 @@
         </transition>
       </div>
     </div>
+
+    <!-- 备注消息 -->
+    <n-modal
+      v-model:show="showApplyModal"
+      preset="dialog"
+      title="备注"
+      :mask-closable="true"
+      :close-on-esc="true"
+      style="width: 480px; max-width: 90vw;"
+      positive-text="发送"
+      negative-text="取消"
+      @positive-click="handleApplyConfirm"
+      @negative-click="showApplyModal = false"
+      :loading="addFriendLoading">
+      <div class="apply-form">
+        <div class="form-item">
+          <label class="form-label">备注（可选）</label>
+          <n-input
+            v-model:value="applyMessage"
+            type="textarea"
+            placeholder="请输入..."
+            :maxlength="255"
+            show-count
+            :rows="4"
+            clearable />
+        </div>
+      </div>
+    </n-modal>
   </n-modal>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { searchUsers, sendFriendRequest } from '@/api/user.ts'
 import type { SearchUserItem } from '@/models/user'
 import { useMessage, NTooltip } from 'naive-ui'
-import { UserAddOutlined as UserAddIcon } from '@vicons/antd'
+import { UserAddOutlined as UserAddIcon, SearchOutlined as SearchIcon } from '@vicons/antd'
 import { getAuthUser } from '@/utils/auth'
 
-defineProps({
+const props = defineProps({
   show: {
     type: Boolean,
     default: false
@@ -109,12 +140,17 @@ defineProps({
 const emit = defineEmits<{(e: 'update:show', value: boolean): void}>()
 
 const message = useMessage()
+const inputRef = ref()
 const keyword = ref('')
 const searchResult = ref<SearchUserItem>()
 const searchLoading = ref(false)
 const addFriendLoading = ref(false)
-const hasSearched = ref(false) // 标记是否已经触发过搜索
+const hasSearched = ref(false)
 const authUser = getAuthUser()
+const applyDisabled = ref(false)
+const showApplyModal = ref(false)
+const applyMessage = ref('')
+const targetUserId = ref('')
 
 // 搜索用户的函数
 const handleSearchUsers = async () => {
@@ -127,7 +163,6 @@ const handleSearchUsers = async () => {
   hasSearched.value = true
   try {
     searchResult.value = await searchUsers(keyword.value)
-    // 状态字段会从后端返回，不需要前端初始化
   } catch (error) {
     message.error('搜索失败，请稍后重试')
     console.log(error);
@@ -143,24 +178,44 @@ const statusMap: Record<string, { text: string; type: 'info' | 'error' | 'succes
   'approved': { text: '已通过', type: 'success', tooltip: '你们已是好友关系' }
 }
 
+// 显示申请对话框
+const showApplyDialog = (userId: string) => {
+  targetUserId.value = userId
+  applyMessage.value = ''
+  showApplyModal.value = true
+}
+
+// 确认发送申请
+const handleApplyConfirm = async () => {
+  await addFriend(targetUserId.value)
+  showApplyModal.value = false
+}
+
 // 添加好友的函数
 const addFriend = async (userId: string) => {
   addFriendLoading.value = true
+  applyDisabled.value = true
   try {
     var friendApply = {
       fromId: authUser.id,
       toId: userId,
+      message: applyMessage.value || '',
       createdAt: Date.now()
     }
     const success = await sendFriendRequest(friendApply)
     if (success) {
       message.success(`已发送好友请求`)
+      // 更新本地状态
+      if (searchResult.value) {
+        searchResult.value.status = 'pending'
+      }
     } else {
+      applyDisabled.value = false
       message.warning('添加好友失败')
     }
   } catch (error) {
+    applyDisabled.value = false
     message.error('添加好友失败，请稍后重试')
-    console.error('Add friend error:', error)
   } finally {
     addFriendLoading.value = false
   }
@@ -181,30 +236,36 @@ watch(keyword, (newKeyword) => {
   }
 })
 
+// 展示时，聚焦输入框
+watch(() => props.show, (newShow) => {
+  if (newShow) {
+    nextTick(() => {
+      inputRef.value?.focus()
+    })
+  }
+})
+
+// 处理显示状态更新
+const handleUpdateShow = (value: boolean) => {
+  if (!value) {
+    handleClose()
+  } else {
+    emit('update:show', value)
+  }
+}
+
 const handleClose = () => {
   searchLoading.value = false
   keyword.value = ''
   searchResult.value = undefined
   hasSearched.value = false // 重置搜索状态
+  applyDisabled.value = false // 重置申请状态
+  showApplyModal.value = false // 关闭申请对话框
+  applyMessage.value = '' // 清空申请备注
+  targetUserId.value = '' // 清空目标用户ID
   emit('update:show', false)
 }
 
-// 动画事件处理（可选）
-const onEnter = (el: Element) => {
-  // 渐入动画开始
-}
-
-const onLeave = (el: Element) => {
-  // 渐出动画开始
-}
-
-const onAfterEnter = () => {
-  // 渐入动画完成
-}
-
-const onAfterLeave = () => {
-  // 渐出动画完成
-}
 </script>
 
 <style scoped>
@@ -252,10 +313,6 @@ const onAfterLeave = () => {
   overflow-y: auto;
   border-radius: 8px;
   padding: 8px;
-}
-
-.status-tag {
-  font-weight: bold;
 }
 
 .user-item {
@@ -306,13 +363,6 @@ const onAfterLeave = () => {
 .user-action {
   margin-left: 12px;
   flex-shrink: 0;
-}
-
-.add-btn {
-  min-width: 60px;
-  height: 32px;
-  font-size: 13px;
-  border-radius: 6px;
 }
 
 .status-tag {
@@ -469,5 +519,31 @@ const onAfterLeave = () => {
     font-size: 13px;
     margin-top: 2px;
     margin-left: 2px;
+}
+
+/* 申请对话框样式 */
+.apply-form {
+  padding: 16px 0;
+}
+
+.form-item {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.apply-form .n-input {
+  background-color: #fafafa;
+  border-radius: 6px;
+}
+
+.apply-form .n-input:focus-within {
+  background-color: #fff;
 }
 </style>
