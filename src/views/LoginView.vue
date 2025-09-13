@@ -1,5 +1,8 @@
 <template>
   <div class="login-container">
+    <div class="login-left">
+      <img src="/assets/login-left.png" />
+    </div>
     <div class="login-card-container">
       <n-card class="login-card">
         <div class="login-header">
@@ -321,7 +324,60 @@ const toResetPassword = () => {
   height: 100vh;
   overflow: hidden;
   padding-right: 10vw;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.login-left {
+  position: absolute;
+  top: 15%;
+  left: 10%;
+  width: 600px;
+  height: 600px;
+  animation: slideInLeft 0.8s ease-out;
+}
+
+.login-container > div:first-child img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: fadeIn 1s ease-out;
+}
+
+.login-card-container {
+  width: 420px;
+  animation: slideInRight 0.8s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .login-container::before {
@@ -351,19 +407,26 @@ const toResetPassword = () => {
 
 .login-card-container {
   width: 420px;
+  transform: translateY(0);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card-container:hover {
+  transform: translateY(-5px);
 }
 
 .login-card {
-  border-radius: 16px;
-  padding: 30px;
-  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  padding: 36px;
+  background-color: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  min-height: 500px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08), 0 8px 16px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  min-height: 520px;
   display: flex;
   flex-direction: column;
+  transition: all 0.3s ease;
 }
 
 .form-container {
@@ -371,35 +434,113 @@ const toResetPassword = () => {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding: 10px 0;
+}
+
+.form-container .n-form {
+  width: 100%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-container .n-form-item {
+  margin-bottom: 24px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-container .n-form-item.fade-enter-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-container .n-form-item.fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
 }
 
 .login-header {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 8px;
+  animation: fadeInDown 0.6s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .go-chat-logo {
   width: 60px;
   height: 60px;
   margin-right: 20px;
-  border-radius: 12px;
+  border-radius: 16px;
   object-fit: cover;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
 h2 {
-  font-size: 30px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 800;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: #2c3e50;
   margin: 0;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
 }
 
 h2 span {
-  color: #2c3e50;
+  color: #007AFF;
+  animation: pulse 2s ease-in-out infinite;
+  -webkit-text-fill-color: unset;
+  background: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.switch-form {
+  text-align: center;
+  margin-top: 20px;
+  color: #666;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .login-form .n-form-item,
@@ -424,6 +565,19 @@ h2 span {
   --n-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --n-font-weight: 400;
   --n-letter-spacing: 0.2px;
+}
+
+.login-form .n-input .n-button,
+.register-form .n-input .n-button,
+.reset-password-form .n-input .n-button {
+  transition: none;
+  transform: none;
+}
+
+.login-form .n-input .n-button:hover,
+.register-form .n-input .n-button:hover,
+.reset-password-form .n-input .n-button:hover {
+  transform: none;
 }
 
 .login-form .n-input::placeholder,
@@ -452,6 +606,12 @@ h2 span {
   --n-font-size: 14px;
   --n-font-weight: 500;
   color: #007AFF;
+  transition: none;
+  transform: none;
+}
+
+.login-options .n-button:hover {
+  transform: none;
 }
 
 .more-login-container {
@@ -613,22 +773,36 @@ h2 span {
 }
 
 :deep(.n-input) {
-  --n-border-radius: 14px;
-  --n-border-hover: 1px solid rgba(0, 122, 255, 0.3);
-  --n-border-focus: 1px solid rgba(0, 122, 255, 0.5);
-  --n-box-shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.1);
-  --n-background-color: rgba(255, 255, 255, 0.9);
-  --n-background-color-hover: rgba(255, 255, 255, 0.95);
+  --n-border-radius: 16px;
+  --n-border: 1px solid rgba(0, 0, 0, 0.08);
+  --n-border-hover: 1px solid rgba(0, 122, 255, 0.4);
+  --n-border-focus: 1px solid rgba(0, 122, 255, 0.6);
+  --n-box-shadow-focus: 0 0 0 4px rgba(0, 122, 255, 0.15);
+  --n-background-color: rgba(255, 255, 255, 0.95);
+  --n-background-color-hover: rgba(255, 255, 255, 0.98);
   --n-background-color-focus: rgba(255, 255, 255, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+:deep(.n-input:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+:deep(.n-input:focus) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 0 0 4px rgba(0, 122, 255, 0.15);
 }
 
 :deep(.n-button) {
-  --n-border-radius: 14px;
+  --n-border-radius: 16px;
   --n-height: 52px;
   --n-font-size: 15px;
   --n-font-weight: 600;
   --n-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --n-letter-spacing: 0.3px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :deep(.n-button--primary-type) {
@@ -638,5 +812,28 @@ h2 span {
   --n-border: none;
   --n-box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
   --n-box-shadow-hover: 0 6px 20px rgba(0, 122, 255, 0.4);
+  transform: translateY(0);
+}
+
+:deep(.n-button--primary-type:hover) {
+  transform: translateY(-2px);
+}
+
+:deep(.n-button--primary-type:active) {
+  transform: translateY(0);
+}
+
+:deep(.switch-form .n-button) {
+  --n-height: auto;
+  --n-font-size: 14px;
+  --n-font-weight: 500;
+  padding: 2px 4px;
+  margin-left: 2px;
+  transition: none;
+  transform: none;
+}
+
+:deep(.switch-form .n-button:hover) {
+  transform: none;
 }
 </style>
