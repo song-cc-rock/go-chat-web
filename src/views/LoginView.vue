@@ -5,97 +5,140 @@
         <div class="login-header">
           <h2>Just Chat <span>✨</span></h2>
         </div>
-        <n-tabs default-value="signin" size="large" justify-content="space-evenly">
-          <n-tab-pane name="signin" tab="登录">
-            <n-form :show-label="false" class="login-form" ref="formRef" :model="loginForm" :rules="rules">
-              <n-form-item path="account">
-                <n-input placeholder="手机号或邮箱" v-model:value="loginForm.account">
-                  <template #prefix>
-                    <n-icon size="20" :component="UsernameIcon" />
-                  </template>
-                </n-input>
-              </n-form-item>
-              <n-form-item path="password">
-                <n-input type="password" placeholder="密码" show-password-on="click" v-model:value="loginForm.password">
-                  <template #prefix>
-                    <n-icon size="20" :component="PasswordIcon" />
-                  </template>
-                </n-input>
-              </n-form-item>
-              <n-form-item class="login-options">
-                <n-checkbox>自动登录</n-checkbox>
-                <n-button text tag="a" target="_blank" type="primary">
-                  忘记密码
-                </n-button>
-              </n-form-item>
-            </n-form>
-            <n-button type="primary" block strong @click="toLogin">
-              登录
-            </n-button>
+        <div v-if="currentView === 'login'" class="form-container">
+          <n-form :show-label="false" class="login-form" ref="formRef" :model="loginForm" :rules="rules">
+            <n-form-item path="account">
+              <n-input placeholder="手机号或邮箱" v-model:value="loginForm.account">
+                <template #prefix>
+                  <n-icon size="20" :component="UsernameIcon" />
+                </template>
+              </n-input>
+            </n-form-item>
+            <n-form-item path="password">
+              <n-input type="password" placeholder="密码" show-password-on="click" v-model:value="loginForm.password">
+                <template #prefix>
+                  <n-icon size="20" :component="PasswordIcon" />
+                </template>
+              </n-input>
+            </n-form-item>
+            <n-form-item class="login-options">
+              <n-checkbox>自动登录</n-checkbox>
+              <n-button text tag="a" target="_blank" type="primary" @click.prevent="showResetPasswordForm">
+                忘记密码
+              </n-button>
+            </n-form-item>
+          </n-form>
+          <n-button type="primary" block strong @click="toLogin">
+            登录
+          </n-button>
 <!-- 
-            <div class="more-login-container">
-              <n-divider class="modern-divider">其他登录方式</n-divider>
-              <div class="social-login-row">
-                <n-button text circle @click="redirectAuthUrl('github')" class="social-btn">
-                  <template #icon>
-                    <n-icon size="28" :component="GithubIcon" />
-                  </template>
-                </n-button>
-                <n-button text circle @click="redirectAuthUrl('wechat')" class="social-btn">
-                  <template #icon>
-                    <n-icon size="28" :component="WechatIcon" />
-                  </template>
-                </n-button>
-                <n-button text circle class="social-btn">
-                  <template #icon>
-                    <n-icon size="28" :component="QQIcon" />
-                  </template>
-                </n-button>
-                <n-button text circle class="social-btn">
-                  <template #icon>
-                    <n-icon size="28" :component="ZhihuIcon" />
-                  </template>
-                </n-button>
-              </div>
-            </div> -->
-          </n-tab-pane>
-          <n-tab-pane name="signup" tab="注册">
-            <n-form :show-label="false" class="register-form" :model="registerForm" ref="registerRef" :rules="registerRules">
-              <n-form-item path="account">
-                <n-input placeholder="手机号或邮箱" v-model:value="registerForm.account">
-                  <template #prefix>
-                    <n-icon size="20" :component="UsernameIcon" />
-                  </template>
-                </n-input>
-              </n-form-item>
-              <n-form-item path="code">
-                <n-input placeholder="验证码" v-model:value="registerForm.code">
-                  <template #prefix>
-                    <n-icon size="20" :component="CodeIcon" />
-                  </template>
-                  <template #suffix>
-                    <n-button text type="primary" @click="getMyCode" v-if="!codeFinish">
-                      获取验证码
-                    </n-button>
-                    <n-button text type="primary" :disabled="true" v-else>
-                      {{ remainingTime.seconds }}s
-                    </n-button>
-                  </template>
-                </n-input>
-              </n-form-item>
-              <n-form-item path="password">
-                <n-input type="password" placeholder="初始密码" show-password-on="click" v-model:value="registerForm.password">
-                  <template #prefix>
-                    <n-icon size="20" :component="PasswordIcon" />
-                  </template>
-                </n-input>
-              </n-form-item>
-            </n-form>
-            <n-button type="primary" block strong @click="toRegister">
-              注册
-            </n-button>
-          </n-tab-pane>
-        </n-tabs>
+          <div class="more-login-container">
+            <n-divider class="modern-divider">其他登录方式</n-divider>
+            <div class="social-login-row">
+              <n-button text circle @click="redirectAuthUrl('github')" class="social-btn">
+                <template #icon>
+                  <n-icon size="28" :component="GithubIcon" />
+                </template>
+              </n-button>
+              <n-button text circle @click="redirectAuthUrl('wechat')" class="social-btn">
+                <template #icon>
+                  <n-icon size="28" :component="WechatIcon" />
+                </template>
+              </n-button>
+              <n-button text circle class="social-btn">
+                <template #icon>
+                  <n-icon size="28" :component="QQIcon" />
+                </template>
+              </n-button>
+              <n-button text circle class="social-btn">
+                <template #icon>
+                  <n-icon size="28" :component="ZhihuIcon" />
+                </template>
+              </n-button>
+            </div>
+          </div> -->
+          <div class="switch-form">
+            没有账号？<n-button text type="primary" @click="currentView = 'register'">立即注册</n-button>
+          </div>
+        </div>
+        <div v-if="currentView === 'register'" class="form-container">
+          <n-form :show-label="false" class="register-form" :model="registerForm" ref="registerRef" :rules="registerRules">
+            <n-form-item path="account">
+              <n-input placeholder="手机号或邮箱" v-model:value="registerForm.account">
+                <template #prefix>
+                  <n-icon size="20" :component="UsernameIcon" />
+                </template>
+              </n-input>
+            </n-form-item>
+            <n-form-item path="code">
+              <n-input placeholder="验证码" v-model:value="registerForm.code">
+                <template #prefix>
+                  <n-icon size="20" :component="CodeIcon" />
+                </template>
+                <template #suffix>
+                  <n-button text type="primary" @click="getMyCode" v-if="!codeFinish">
+                    获取验证码
+                  </n-button>
+                  <n-button text type="primary" :disabled="true" v-else>
+                    {{ remainingTime.seconds }}s
+                  </n-button>
+                </template>
+              </n-input>
+            </n-form-item>
+            <n-form-item path="password">
+              <n-input type="password" placeholder="初始密码" show-password-on="click" v-model:value="registerForm.password">
+                <template #prefix>
+                  <n-icon size="20" :component="PasswordIcon" />
+                </template>
+              </n-input>
+            </n-form-item>
+          </n-form>
+          <n-button type="primary" block strong @click="toRegister">
+            注册
+          </n-button>
+          <div class="switch-form">
+            已有账号？<n-button text type="primary" @click="currentView = 'login'">立即登录</n-button>
+          </div>
+        </div>
+        <div v-if="currentView === 'resetPassword'" class="form-container">
+          <n-form :show-label="false" class="reset-password-form" :model="resetPasswordForm" ref="resetPasswordRef" :rules="resetPasswordRules">
+            <n-form-item path="account">
+              <n-input placeholder="手机号或邮箱" v-model:value="resetPasswordForm.account">
+                <template #prefix>
+                  <n-icon size="20" :component="UsernameIcon" />
+                </template>
+              </n-input>
+            </n-form-item>
+            <n-form-item path="code">
+              <n-input placeholder="验证码" v-model:value="resetPasswordForm.code">
+                <template #prefix>
+                  <n-icon size="20" :component="CodeIcon" />
+                </template>
+                <template #suffix>
+                  <n-button text type="primary" @click="getResetPasswordCode" v-if="!resetCodeFinish">
+                    获取验证码
+                  </n-button>
+                  <n-button text type="primary" :disabled="true" v-else>
+                    {{ resetRemainingTime.seconds }}s
+                  </n-button>
+                </template>
+              </n-input>
+            </n-form-item>
+            <n-form-item path="password">
+              <n-input type="password" placeholder="新密码" show-password-on="click" v-model:value="resetPasswordForm.password">
+                <template #prefix>
+                  <n-icon size="20" :component="PasswordIcon" />
+                </template>
+              </n-input>
+            </n-form-item>
+          </n-form>
+          <n-button type="primary" block strong @click="toResetPassword">
+            重置密码
+          </n-button>
+          <n-button block @click="currentView = 'login'" style="margin-top: 10px;">
+            返回登录
+          </n-button>
+        </div>
       </n-card>
     </div>
   </div>
@@ -115,12 +158,15 @@ import { getAuthUrl } from '@/api/auth.ts'
 import { getBaseAuthByType } from '@/constants/auth.ts'
 import { getUserProfile } from '@/api/user.ts'
 import { setAuthUser } from '@/utils/auth.ts'
+import { resetPassword } from '@/api/password.ts'
 
 const router = useRouter()
 const formRef = ref<FormInst | null>(null)
 const registerRef = ref<FormInst | null>(null)
+const resetPasswordRef = ref<FormInst | null>(null)
 const loginForm = ref({ account: '', password: '' })
 const registerForm = ref({account: '', code: '', password: ''})
+const resetPasswordForm = ref({account: '', code: '', password: ''})
 const rules = {
   account: [{ required: true, message: '请输入手机号或邮箱' }],
   password: [{ required: true, message: '请输入密码' }]
@@ -130,15 +176,28 @@ const registerRules = {
   code: [{ required: true, message: '请输入验证码' }],
   password: [{ required: true, message: '请输入密码' }]
 }
+const resetPasswordRules = {
+  account: [{ required: true, message: '请输入手机号或邮箱' }],
+  code: [{ required: true, message: '请输入验证码' }],
+  password: [{ required: true, message: '请输入新密码' }]
+}
 const totalTime = 60
 const { message } = createDiscreteApi(["message"])
 const codeFinish = ref<boolean>(false)
+const resetCodeFinish = ref<boolean>(false)
+const currentView = ref<string>('login') // 'login', 'register', 'resetPassword'
 
 const remainingTime = reactive ({
   seconds: totalTime
 })
+
+const resetRemainingTime = reactive ({
+  seconds: totalTime
+})
+
 // countdown timer
 let timer : ReturnType<typeof setInterval> | undefined;
+let resetTimer : ReturnType<typeof setInterval> | undefined;
 
 const getMyCode = async () => {
   if (!codeFinish.value) {
@@ -205,6 +264,51 @@ const redirectAuthUrl = async (authType: string) => {
   const redirectParam = await getAuthUrl(authType)
   window.location.href = getBaseAuthByType(authType) + redirectParam
 }
+
+const showResetPasswordForm = () => {
+  currentView.value = 'resetPassword'
+}
+
+const getResetPasswordCode = async () => {
+  if (!resetCodeFinish.value) {
+    if (!resetPasswordForm.value.account) {
+        message.error('请填写手机或邮箱!');
+        return;
+      }
+    
+    await sendVerifyCode(resetPasswordForm.value.account);
+    message.success('验证码已发送，请注意查收!');
+    resetCodeFinish.value = true;
+    resetRemainingTime.seconds = totalTime;
+  }
+  resetTimer = setInterval(() => {
+    if (resetRemainingTime.seconds > 1) {
+      resetRemainingTime.seconds--;
+    } else {
+      resetCodeFinish.value = false;
+      clearInterval(resetTimer);
+    }
+  }, 1000);
+}
+
+const toResetPassword = () => {
+  resetPasswordRef.value?.validate(async (errors) => {
+    if (!errors) {
+      const user = {
+        mail: resetPasswordForm.value.account,
+        code: resetPasswordForm.value.code,
+        password: resetPasswordForm.value.password
+      }
+      await resetPassword(user)
+      message.success('重置成功，请重新登录!');
+      resetPasswordForm.value = {account: '', code: '', password: ''}
+      resetCodeFinish.value = false
+      clearInterval(resetTimer)
+      resetRemainingTime.seconds = totalTime
+      currentView.value = 'login'
+    }
+  })
+}
 </script>
 
 <style scoped>
@@ -257,9 +361,16 @@ const redirectAuthUrl = async (authType: string) => {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  min-height: 420px;
+  min-height: 500px;
   display: flex;
   flex-direction: column;
+}
+
+.form-container {
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .login-header {
@@ -292,12 +403,20 @@ h2 span {
 }
 
 .login-form .n-form-item,
-.register-form .n-form-item {
+.register-form .n-form-item,
+.reset-password-form .n-form-item {
   margin-bottom: 20px;
 }
 
+.switch-form {
+  text-align: center;
+  margin-top: 20px;
+  color: #666;
+}
+
 .login-form .n-input,
-.register-form .n-input {
+.register-form .n-input,
+.reset-password-form .n-input {
   --n-height: 52px;
   --n-padding: 0 18px;
   --n-font-size: 15px;
@@ -308,7 +427,8 @@ h2 span {
 }
 
 .login-form .n-input::placeholder,
-.register-form .n-input::placeholder {
+.register-form .n-input::placeholder,
+.reset-password-form .n-input::placeholder {
   color: rgba(0, 0, 0, 0.5);
   font-weight: 400;
 }
